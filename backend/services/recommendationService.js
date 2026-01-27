@@ -1,5 +1,6 @@
 import Tour from "../models/Tour.js";
 import Package from "../models/Package.js";
+import { getClaudeTravelReply, isClaudeEnabled } from "./claudeService.js";
 
 const sriLankaPlaces = [
   {
@@ -66,19 +67,29 @@ const mapBudget = (budget) => {
   return "high";
 };
 
-export const getSmartPlaceRecommendations = ({ budget = 0, durationDays = 2, interests = [] }) => {
+export const getSmartPlaceRecommendations = ({
+  budget = 0,
+  durationDays = 2,
+  interests = [],
+}) => {
   const budgetLevel = mapBudget(Number(budget));
   return sriLankaPlaces
     .filter((place) => {
-      const matchesInterest = interests.length ? interests.includes(place.category) : true;
-      const matchesBudget = place.budgetLevel === budgetLevel || budgetLevel === "high";
+      const matchesInterest = interests.length
+        ? interests.includes(place.category)
+        : true;
+      const matchesBudget =
+        place.budgetLevel === budgetLevel || budgetLevel === "high";
       const matchesDuration = place.duration <= durationDays;
       return matchesInterest && matchesBudget && matchesDuration;
     })
     .slice(0, 5);
 };
 
-export const getBestPackageRecommendations = async ({ budget, durationDays }) => {
+export const getBestPackageRecommendations = async ({
+  budget,
+  durationDays,
+}) => {
   const query = { status: "published" };
   if (budget) {
     query.$or = [
@@ -117,18 +128,48 @@ const chatResponses = [
 ];
 
 export const getTravelAssistantReply = async (question = "") => {
-  const normalized = question.toLowerCase();
+  const trimmedQuestion = question.trim();
+  if (!trimmedQuestion) {
+    return "I would love to help plan your trip. Tell me your travel month, budget, and interests!";
+  }
+
+  let featuredTours = [];
+
+  if (isClaudeEnabled()) {
+    try {
+      featuredTours = await Tour.find({})
+        .sort({ "ratings.average": -1 })
+        .limit(5);
+      const claudeReply = await getClaudeTravelReply(trimmedQuestion, {
+        tours: featuredTours,
+      });
+      if (claudeReply) {
+        return claudeReply;
+      }
+    } catch (error) {
+      console.error("Claude travel assistant failed", error);
+    }
+  }
+
+  const normalized = trimmedQuestion.toLowerCase();
   const matched = chatResponses.find((item) =>
-    item.keywords.some((keyword) => normalized.includes(keyword))
+    item.keywords.some((keyword) => normalized.includes(keyword)),
   );
 
   if (matched) {
     return matched.response;
   }
 
-  const tours = await Tour.find({}).sort({ "ratings.average": -1 }).limit(3);
-  if (tours.length) {
-    const highlights = tours.map((tour) => `${tour.title} (${tour.durationDays} days)`).join(", ");
+  if (!featuredTours.length) {
+    featuredTours = await Tour.find({})
+      .sort({ "ratings.average": -1 })
+      .limit(3);
+  }
+
+  if (featuredTours.length) {
+    const highlights = featuredTours
+      .map((tour) => `${tour.title} (${tour.durationDays} days)`)
+      .join(", ");
     return `I recommend considering ${highlights}. Let me know your budget and travel month to refine this further.`;
   }
 
