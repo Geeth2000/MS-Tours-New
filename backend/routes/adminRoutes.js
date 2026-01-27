@@ -1,26 +1,33 @@
 import { Router } from "express";
 import {
-  getPendingVehicleOwners,
-  updateVehicleOwnerStatus,
-  listUsers,
-  getDashboardSummary,
+  getAdminSummary,
+  getUsers,
+  deleteUser,
+  deleteTour,
+  adminDeleteVehicle,
+  adminDeletePackage,
+  getPendingOwners,
+  updateOwnerStatus,
 } from "../controllers/adminController.js";
 import { authenticate, requireRoles } from "../middleware/authMiddleware.js";
-import { validateRequest } from "../middleware/validateRequest.js";
-import { updateOwnerStatusSchema } from "../validators/adminValidators.js";
 import { USER_ROLES } from "../config/constants.js";
 
 const router = Router();
 
+// Protect all admin routes
 router.use(authenticate, requireRoles(USER_ROLES.ADMIN));
 
-router.get("/dashboard/summary", getDashboardSummary);
-router.get("/owners/pending", getPendingVehicleOwners);
-router.patch(
-  "/owners/:id/status",
-  validateRequest(updateOwnerStatusSchema),
-  updateVehicleOwnerStatus
-);
-router.get("/users", listUsers);
+// This matches GET /api/v1/admin/summary
+router.get("/summary", getAdminSummary);
+
+router.get("/users", getUsers);
+router.delete("/users/:id", deleteUser);
+
+router.delete("/tours/:id", deleteTour);
+router.delete("/vehicles/:id", adminDeleteVehicle);
+router.delete("/packages/:id", adminDeletePackage);
+
+router.get("/owners/pending", getPendingOwners);
+router.patch("/owners/:id/status", updateOwnerStatus);
 
 export default router;
