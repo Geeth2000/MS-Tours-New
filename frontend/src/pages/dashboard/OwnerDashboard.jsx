@@ -1,0 +1,638 @@
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import {
+  fetchMyVehicles,
+  createVehicle,
+  deleteVehicle,
+} from "../../services/vehicleService.js";
+import {
+  fetchMyPackages,
+  createPackage,
+  deletePackage,
+} from "../../services/packageService.js";
+import {
+  fetchOwnerBookings,
+  updateBookingStatus,
+} from "../../services/bookingService.js";
+import { handleApiError } from "../../services/apiClient.js";
+import uploadfile from "../../utils/mediaUpload.js"; // Import the upload utility
+
+const PACKAGE_FORM_DEFAULTS = {
+  title: "",
+  description: "",
+  packageType: "dayTrip",
+  durationDays: 1,
+  pricePerGroup: "",
+  pricePerPerson: "",
+};
+
+const OwnerDashboard = () => {
+  const [vehicles, setVehicles] = useState([]);
+  const [packages, setPackages] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState("overview");
+
+  // New state for file handling
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const vehicleForm = useForm();
+  const packageForm = useForm({ defaultValues: PACKAGE_FORM_DEFAULTS });
+
+  const load = async () => {
+    try {
+      const [vehicleData, packageData, bookingData] = await Promise.all([
+        fetchMyVehicles(),
+        fetchMyPackages(),
+        fetchOwnerBookings(),
+      ]);
+      setVehicles(vehicleData);
+      setPackages(packageData);
+      setBookings(bookingData);
+    } catch (err) {
+      setError(handleApiError(err));
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  // --- HANDLERS ---
+  const onVehicleSubmit = vehicleForm.handleSubmit(async (formData) => {
+    try {
+      setIsUploading(true); // Start loading state
+      let imageUrls = [];
+
+      // 1. Upload Images to Supabase if files are selected
+      if (selectedFiles && selectedFiles.length > 0) {
+        const uploadPromises = Array.from(selectedFiles).map((file) =>
+          uploadfile(file),
+        );
+        imageUrls = await Promise.all(uploadPromises);
+      }
+
+      // 2. Prepare payload with the new image URLs
+      const payload = {
+        ...formData,
+        images: imageUrls,
+      };
+
+      // 3. Send to backend
+      await createVehicle(payload);
+
+      // 4. Cleanup
+      vehicleForm.reset();
+      setSelectedFiles([]); // Clear selected files
+      await load();
+      alert("Vehicle added successfully!");
+    } catch (err) {
+      console.error(err);
+      setError(handleApiError(err));
+    } finally {
+      setIsUploading(false); // Stop loading state
+    }
+  });
+
+  const onPackageSubmit = packageForm.handleSubmit(async (formData) => {
+    try {
+      await createPackage(formData);
+      packageForm.reset(PACKAGE_FORM_DEFAULTS);
+      await load();
+      alert("Package created successfully!");
+    } catch (err) {
+      setError(handleApiError(err));
+    }
+  });
+
+  const handleVehicleDelete = async (id) => {
+    if (!window.confirm("Remove this vehicle?")) return;
+    try {
+      await deleteVehicle(id);
+      await load();
+    } catch (err) {
+      setError(handleApiError(err));
+    }
+  };
+
+  const handlePackageDelete = async (id) => {
+    if (!window.confirm("Delete this package?")) return;
+    try {
+      await deletePackage(id);
+      await load();
+    } catch (err) {
+      setError(handleApiError(err));
+    }
+  };
+
+  const handleBookingStatus = async (id, status) => {
+    try {
+      await updateBookingStatus(id, { status });
+      await load();
+    } catch (err) {
+      setError(handleApiError(err));
+    }
+  };
+
+  // --- STATS CALCULATIONS ---
+  const totalEarnings = bookings
+    .filter((b) => b.status === "confirmed" || b.status === "completed")
+    .reduce((acc, b) => acc + (b.ownerEarnings || 0), 0);
+
+  const pendingCount = bookings.filter((b) => b.status === "pending").length;
+
+  return (
+    <div className="flex flex-col gap-8 pb-12 font-sans text-slate-600">
+      {/* 1. HERO HEADER */}
+      <header className="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-slate-900 to-slate-800 p-10 text-white shadow-xl">
+        <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">
+              Partner Dashboard
+            </h1>
+            <p className="mt-2 text-slate-400">
+              Manage your Sri Lankan travel business efficiently.
+            </p>
+          </div>
+
+          <div className="flex gap-4">
+            <StatBadge
+              label="Total Earnings"
+              value={`LKR ${totalEarnings.toLocaleString()}`}
+            />
+            <StatBadge
+              label="Pending Requests"
+              value={pendingCount}
+              highlight={pendingCount > 0}
+            />
+          </div>
+        </div>
+        <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-sky-500/20 blur-3xl" />
+      </header>
+
+      {error && (
+        <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600 shadow-sm">
+          {error}
+        </div>
+      )}
+
+      {/* 2. NAVIGATION TABS */}
+      <nav className="flex gap-8 border-b border-slate-200 px-4">
+        {["overview", "bookings", "fleet", "packages"].map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`relative pb-4 text-sm font-semibold tracking-wide transition-colors ${
+              activeTab === tab
+                ? "text-sky-600"
+                : "text-slate-400 hover:text-slate-600"
+            }`}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {activeTab === tab && (
+              <span className="absolute bottom-0 left-0 h-0.5 w-full bg-sky-500" />
+            )}
+          </button>
+        ))}
+      </nav>
+
+      {/* 3. MAIN CONTENT AREA */}
+      <main className="min-h-[500px]">
+        {/* --- OVERVIEW TAB --- */}
+        {activeTab === "overview" && (
+          <div className="grid gap-8 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:col-span-3">
+              <InfoCard
+                title="Total Vehicles"
+                value={vehicles.length}
+                icon="🚗"
+                color="bg-blue-50 text-blue-600"
+              />
+              <InfoCard
+                title="Active Packages"
+                value={packages.length}
+                icon="📦"
+                color="bg-emerald-50 text-emerald-600"
+              />
+              <InfoCard
+                title="Total Bookings"
+                value={bookings.length}
+                icon="📅"
+                color="bg-purple-50 text-purple-600"
+              />
+              <InfoCard
+                title="Rating"
+                value="4.8"
+                icon="⭐"
+                color="bg-amber-50 text-amber-600"
+              />
+            </div>
+
+            <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm lg:col-span-2">
+              <h3 className="mb-6 text-lg font-bold text-slate-800">
+                Recent Activity
+              </h3>
+              <div className="space-y-4">
+                {bookings.length === 0 && (
+                  <p className="text-slate-400">No recent activity found.</p>
+                )}
+                {bookings.slice(0, 5).map((booking) => (
+                  <BookingRow
+                    key={booking._id}
+                    booking={booking}
+                    onAction={handleBookingStatus}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-3xl bg-gradient-to-br from-sky-500 to-blue-600 p-8 text-white shadow-lg">
+              <div className="mb-4 text-3xl">✨</div>
+              <h3 className="text-xl font-bold">AI Assistant</h3>
+              <p className="mt-2 text-sky-100 opacity-90">
+                "Tourists are looking for <strong>Ella</strong> trips. Consider
+                adding a van package!"
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* --- BOOKINGS TAB --- */}
+        {activeTab === "bookings" && (
+          <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-sm">
+            <h3 className="mb-6 text-xl font-bold text-slate-800">
+              Booking Management
+            </h3>
+            <div className="space-y-4">
+              {bookings.length === 0 && (
+                <p className="text-slate-400 py-10 text-center">
+                  No bookings yet.
+                </p>
+              )}
+              {bookings.map((booking) => (
+                <BookingRow
+                  key={booking._id}
+                  booking={booking}
+                  onAction={handleBookingStatus}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* --- FLEET TAB (Updated with Supabase Image Upload) --- */}
+        {activeTab === "fleet" && (
+          <div className="grid gap-8 lg:grid-cols-12">
+            {/* Add Form */}
+            <div className="lg:col-span-4">
+              <div className="sticky top-24 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-lg font-bold text-slate-800">
+                  Add Vehicle
+                </h3>
+                <form onSubmit={onVehicleSubmit} className="space-y-4">
+                  <InputGroup
+                    label="Vehicle Name"
+                    register={vehicleForm.register("title", { required: true })}
+                    placeholder="Toyota Axio 2018"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <SelectGroup
+                      label="Type"
+                      register={vehicleForm.register("type")}
+                      options={["car", "van", "suv", "bus"]}
+                    />
+                    <InputGroup
+                      label="Seats"
+                      type="number"
+                      register={vehicleForm.register("seatingCapacity", {
+                        required: true,
+                      })}
+                    />
+                  </div>
+                  <InputGroup
+                    label="Daily Rate (LKR)"
+                    type="number"
+                    register={vehicleForm.register("pricePerDay", {
+                      required: true,
+                    })}
+                  />
+
+                  {/* SUPABASE FILE UPLOAD INPUT */}
+                  <div>
+                    <label className="mb-1 block text-xs font-bold uppercase text-slate-400">
+                      Vehicle Images
+                    </label>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => setSelectedFiles(e.target.files)}
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-sky-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-sky-700 hover:file:bg-sky-100 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                    />
+                    <p className="mt-1 text-xs text-slate-400">
+                      Select multiple images. (Max 5 recommended)
+                    </p>
+                  </div>
+
+                  <TextAreaGroup
+                    label="Description"
+                    register={vehicleForm.register("description")}
+                  />
+
+                  <SubmitButton
+                    label={isUploading ? "Uploading Images..." : "Add Vehicle"}
+                    disabled={isUploading}
+                  />
+                </form>
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:col-span-8">
+              {vehicles.map((v) => (
+                <ItemCard
+                  key={v._id}
+                  title={v.title}
+                  subtitle={`${v.type.toUpperCase()} • ${v.seatingCapacity} Seats`}
+                  price={v.pricePerDay}
+                  image={v.images?.[0]}
+                  onDelete={() => handleVehicleDelete(v._id)}
+                  type="vehicle"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* --- PACKAGES TAB --- */}
+        {activeTab === "packages" && (
+          <div className="grid gap-8 lg:grid-cols-12">
+            {/* Add Form */}
+            <div className="lg:col-span-4">
+              <div className="sticky top-24 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-lg font-bold text-slate-800">
+                  Create Package
+                </h3>
+                <form onSubmit={onPackageSubmit} className="space-y-4">
+                  <InputGroup
+                    label="Package Title"
+                    register={packageForm.register("title", { required: true })}
+                    placeholder="Kandy Day Tour"
+                  />
+                  <TextAreaGroup
+                    label="Itinerary"
+                    register={packageForm.register("description", {
+                      required: true,
+                    })}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <SelectGroup
+                      label="Type"
+                      register={packageForm.register("packageType")}
+                      options={["dayTrip", "multiDay"]}
+                    />
+                    <InputGroup
+                      label="Duration (Days)"
+                      type="number"
+                      register={packageForm.register("durationDays", {
+                        required: true,
+                        min: 1,
+                      })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <InputGroup
+                      label="Group Price"
+                      type="number"
+                      register={packageForm.register("pricePerGroup")}
+                    />
+                    <InputGroup
+                      label="Person Price"
+                      type="number"
+                      register={packageForm.register("pricePerPerson")}
+                    />
+                  </div>
+                  <SubmitButton label="Publish Package" />
+                </form>
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="grid gap-4 sm:grid-cols-2 lg:col-span-8">
+              {packages.map((p) => (
+                <ItemCard
+                  key={p._id}
+                  title={p.title}
+                  subtitle={`${p.packageType} • ${p.durationDays} Days`}
+                  price={p.pricePerGroup || p.pricePerPerson}
+                  isGroup={!!p.pricePerGroup}
+                  onDelete={() => handlePackageDelete(p._id)}
+                  type="package"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+};
+
+// --- SUB-COMPONENTS ---
+const StatBadge = ({ label, value, highlight }) => (
+  <div
+    className={`rounded-2xl p-4 backdrop-blur-md ${highlight ? "bg-white text-sky-600" : "bg-white/10 text-white"}`}
+  >
+    <p className="text-xs font-medium uppercase tracking-wider opacity-80">
+      {label}
+    </p>
+    <p className="mt-1 text-xl font-bold">{value}</p>
+  </div>
+);
+
+const InfoCard = ({ title, value, icon, color }) => (
+  <div className="flex items-center gap-4 rounded-2xl bg-white p-6 shadow-sm transition hover:shadow-md">
+    <div
+      className={`flex h-12 w-12 items-center justify-center rounded-xl text-2xl ${color}`}
+    >
+      {icon}
+    </div>
+    <div>
+      <p className="text-sm font-medium text-slate-400">{title}</p>
+      <p className="text-2xl font-bold text-slate-800">{value}</p>
+    </div>
+  </div>
+);
+
+const BookingRow = ({ booking, onAction }) => {
+  const isPending = booking.status === "pending";
+  return (
+    <div className="flex flex-col gap-4 rounded-2xl border border-slate-50 bg-slate-50/50 p-5 transition hover:bg-white hover:shadow-sm sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div className="flex items-center gap-2">
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide 
+            ${
+              booking.status === "confirmed"
+                ? "bg-emerald-100 text-emerald-700"
+                : booking.status === "pending"
+                  ? "bg-amber-100 text-amber-700"
+                  : "bg-slate-200 text-slate-600"
+            }`}
+          >
+            {booking.status}
+          </span>
+          <span className="text-xs text-slate-400">
+            #{booking._id.slice(-6)}
+          </span>
+        </div>
+        <h4 className="mt-1 font-bold text-slate-800">
+          {booking.user?.firstName} {booking.user?.lastName}
+        </h4>
+        <p className="text-xs text-slate-500">
+          {new Date(booking.startDate).toLocaleDateString()} —{" "}
+          {booking.vehicle?.title || booking.package?.title}
+        </p>
+      </div>
+
+      <div className="flex items-center gap-4">
+        <div className="text-right">
+          <p className="text-xs font-semibold text-slate-400">Earnings</p>
+          <p className="font-bold text-slate-800">
+            LKR {booking.ownerEarnings?.toLocaleString()}
+          </p>
+        </div>
+        {isPending && (
+          <div className="flex gap-2">
+            <button
+              onClick={() => onAction(booking._id, "confirmed")}
+              className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600"
+            >
+              ✓
+            </button>
+            <button
+              onClick={() => onAction(booking._id, "cancelled")}
+              className="rounded-xl bg-rose-500 px-3 py-2 text-xs font-bold text-white hover:bg-rose-600"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const ItemCard = ({
+  title,
+  subtitle,
+  price,
+  isGroup,
+  onDelete,
+  type,
+  image,
+}) => (
+  <div className="group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition hover:border-sky-100 hover:shadow-md">
+    {/* Image Display */}
+    {image ? (
+      <div className="h-40 w-full overflow-hidden bg-slate-100">
+        <img
+          src={image}
+          alt={title}
+          className="h-full w-full object-cover transition duration-500 group-hover:scale-110"
+        />
+      </div>
+    ) : (
+      <div className="h-40 w-full flex items-center justify-center bg-slate-50 text-slate-300">
+        <span className="text-4xl">{type === "vehicle" ? "🚗" : "📦"}</span>
+      </div>
+    )}
+
+    <div className="p-6">
+      <div className="flex items-start justify-between">
+        <div>
+          <h4 className="font-bold text-slate-800">{title}</h4>
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            {subtitle}
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 flex items-center justify-between border-t border-slate-50 pt-4">
+        <div>
+          <p className="text-xs text-slate-400">Price</p>
+          <p className="font-bold text-sky-600">
+            LKR {price?.toLocaleString()}{" "}
+            <span className="text-[10px] text-slate-400 font-normal">
+              {isGroup ? "/group" : type === "vehicle" ? "/day" : "/person"}
+            </span>
+          </p>
+        </div>
+        <button
+          onClick={onDelete}
+          className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-bold text-red-500 hover:bg-red-100"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+const InputGroup = ({ label, register, type = "text", placeholder }) => (
+  <div>
+    <label className="mb-1 block text-xs font-bold uppercase text-slate-400">
+      {label}
+    </label>
+    <input
+      type={type}
+      {...register}
+      placeholder={placeholder}
+      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+    />
+  </div>
+);
+
+const TextAreaGroup = ({ label, register }) => (
+  <div>
+    <label className="mb-1 block text-xs font-bold uppercase text-slate-400">
+      {label}
+    </label>
+    <textarea
+      {...register}
+      rows={3}
+      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-medium text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+    />
+  </div>
+);
+
+const SelectGroup = ({ label, register, options }) => (
+  <div>
+    <label className="mb-1 block text-xs font-bold uppercase text-slate-400">
+      {label}
+    </label>
+    <select
+      {...register}
+      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+    >
+      {options.map((opt) => (
+        <option key={opt} value={opt}>
+          {opt.charAt(0).toUpperCase() + opt.slice(1)}
+        </option>
+      ))}
+    </select>
+  </div>
+);
+
+const SubmitButton = ({ label, disabled }) => (
+  <button
+    type="submit"
+    disabled={disabled}
+    className="mt-2 w-full rounded-xl bg-sky-500 py-3 text-sm font-bold text-white shadow-lg shadow-sky-200 transition hover:bg-sky-600 hover:shadow-sky-300 disabled:bg-slate-300 disabled:shadow-none"
+  >
+    {label}
+  </button>
+);
+
+export default OwnerDashboard;

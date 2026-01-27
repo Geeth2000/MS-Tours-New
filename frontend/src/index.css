@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  @apply bg-secondary text-slate-700 antialiased;
+}
+
+a {
+  @apply text-primary hover:text-primary-dark transition-colors;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 font-semibold text-white shadow-soft transition hover:bg-primary-dark;
+}
+
+.card {
+  @apply rounded-xl bg-white p-6 shadow-soft transition hover:-translate-y-1 hover:shadow-lg;
+}
