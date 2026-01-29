@@ -21,6 +21,7 @@ import OwnerDashboard from "./pages/dashboard/OwnerDashboard.jsx";
 import AdminDashboard from "./pages/dashboard/AdminDashboard.jsx";
 import AddTour from "./pages/admin/AddTour.jsx";
 import { USER_ROLES } from "./services/config.js";
+import PlanTrip from "./pages/PlanTrip.jsx";
 
 const travelerLinks = [
   { to: "/dashboard", label: "Overview" },
@@ -56,6 +57,7 @@ const App = () => (
       <Route path="contact" element={<Contact />} />
       <Route path="awaiting-approval" element={<AwaitingApproval />} />
       <Route path="unauthorized" element={<Unauthorized />} />
+      <Route path="plan-trip" element={<PlanTrip />} />
     </Route>
 
     {/* Auth Routes (Login/Register) */}

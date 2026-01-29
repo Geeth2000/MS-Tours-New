@@ -3,14 +3,14 @@ import User from "../models/User.js";
 import Vehicle from "../models/Vehicle.js";
 import Tour from "../models/Tour.js";
 import Package from "../models/Package.js";
-import Booking from "../models/Booking.js"; // If you have bookings
+import Booking from "../models/Booking.js"; // Ensure Booking model is imported
 import { apiResponse } from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/apiError.js";
 
 // --- SUMMARY STATS ---
 export const getAdminSummary = asyncHandler(async (req, res) => {
-  // 1. Run queries in parallel for performance
+  // 1. Run counts in parallel for performance
   const [totalUsers, totalTours, totalVehicles, totalPackages] =
     await Promise.all([
       User.countDocuments(),
@@ -19,9 +19,26 @@ export const getAdminSummary = asyncHandler(async (req, res) => {
       Package.countDocuments(),
     ]);
 
-  // 2. Calculate Revenue (Optional: Aggregation example)
-  // For now, we can use a placeholder or sum actual bookings
-  const totalRevenue = 1250000; // Replace with await Booking.aggregate(...) logic later
+  // 2. Calculate Real Revenue via Aggregation
+  // We match only 'confirmed' or 'completed' bookings to avoid counting cancelled/pending ones.
+  const revenueStats = await Booking.aggregate([
+    {
+      $match: {
+        status: { $in: ["confirmed", "completed"] },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalRevenue: { $sum: "$totalPrice" },
+        // totalEarnings: { $sum: "$adminEarnings" } // Uncomment if you want only admin commission
+      },
+    },
+  ]);
+
+  // If there are no bookings, default to 0
+  const totalRevenue =
+    revenueStats.length > 0 ? revenueStats[0].totalRevenue : 0;
 
   res.status(StatusCodes.OK).json(
     apiResponse({
@@ -29,6 +46,7 @@ export const getAdminSummary = asyncHandler(async (req, res) => {
         totalUsers,
         totalTours,
         totalVehicles,
+        totalPackages,
         totalRevenue,
       },
     }),
@@ -79,8 +97,6 @@ export const getUsers = asyncHandler(async (req, res) => {
 });
 
 export const getPendingOwners = asyncHandler(async (req, res) => {
-  // Assuming you have an approvalStatus field or similar
-  // Adjust query based on your User model
   const owners = await User.find({
     role: "vehicleOwner",
     "onboarding.approvalStatus": "pending",

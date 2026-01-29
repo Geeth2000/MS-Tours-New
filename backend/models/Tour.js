@@ -52,12 +52,7 @@ const tourSchema = new mongoose.Schema(
     itinerary: [itineraryDaySchema],
     includes: [String],
     excludes: [String],
-
-    // --- UPDATED SECTION ---
-    // Added 'images' to allow Atlas data to pass through
     images: [String],
-    // -----------------------
-
     heroImage: String,
     galleryImages: [String],
     isFeatured: {

@@ -6,6 +6,7 @@ import { USER_ROLES } from "../services/config.js";
 const navLinks = [
   { to: "/", label: "Home" },
   { to: "/tours", label: "Tours" },
+  { to: "/plan-trip", label: "Plan Trip" },
   { to: "/vehicles", label: "Vehicles" },
   { to: "/packages", label: "Packages" },
   { to: "/ai-assistant", label: "AI Assistant" },

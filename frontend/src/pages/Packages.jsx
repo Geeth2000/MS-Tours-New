@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import PackageCard from "../components/PackageCard.jsx";
 import SectionHeading from "../components/SectionHeading.jsx";
+import BookingModal from "../components/BookingModal.jsx"; // Import Modal
 import { fetchPackages } from "../services/packageService.js";
 import { handleApiError } from "../services/apiClient.js";
 
 const Packages = () => {
   const [filters, setFilters] = useState({ packageType: "", maxPrice: "" });
   const [state, setState] = useState({ items: [], loading: true, error: null });
+
+  // NEW: State for modal
+  const [selectedPackage, setSelectedPackage] = useState(null);
 
   const load = async () => {
     try {
@@ -34,6 +38,8 @@ const Packages = () => {
         title="Travel Packages"
         subtitle="Flexible itineraries curated by expert drivers and local guides."
       />
+
+      {/* Filter Form (Existing Code) */}
       <form
         onSubmit={handleSubmit}
         className="grid gap-4 rounded-3xl bg-white p-6 shadow-soft md:grid-cols-4"
@@ -42,7 +48,12 @@ const Packages = () => {
           Type
           <select
             value={filters.packageType}
-            onChange={(event) => setFilters((prev) => ({ ...prev, packageType: event.target.value }))}
+            onChange={(event) =>
+              setFilters((prev) => ({
+                ...prev,
+                packageType: event.target.value,
+              }))
+            }
             className="mt-2 w-full rounded-full border border-slate-200 px-4 py-2 text-sm"
           >
             <option value="">All</option>
@@ -55,7 +66,9 @@ const Packages = () => {
           <input
             type="number"
             value={filters.maxPrice}
-            onChange={(event) => setFilters((prev) => ({ ...prev, maxPrice: event.target.value }))}
+            onChange={(event) =>
+              setFilters((prev) => ({ ...prev, maxPrice: event.target.value }))
+            }
             className="mt-2 w-full rounded-full border border-slate-200 px-4 py-2 text-sm"
           />
         </label>
@@ -65,6 +78,8 @@ const Packages = () => {
           </button>
         </div>
       </form>
+
+      {/* List */}
       {state.loading ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
           Loading packages...
@@ -76,10 +91,23 @@ const Packages = () => {
       ) : (
         <div className="grid gap-6 md:grid-cols-3">
           {state.items.map((pkg) => (
-            <PackageCard key={pkg._id} pkg={pkg} />
+            <PackageCard
+              key={pkg._id}
+              pkg={pkg}
+              // NEW: Pass selection handler
+              onSelect={(item) => setSelectedPackage(item)}
+            />
           ))}
         </div>
       )}
+
+      {/* NEW: Booking Modal */}
+      <BookingModal
+        isOpen={!!selectedPackage}
+        onClose={() => setSelectedPackage(null)}
+        item={selectedPackage}
+        type="package"
+      />
     </div>
   );
 };

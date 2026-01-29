@@ -1,19 +1,26 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom"; // Added useNavigate
 import { useForm } from "react-hook-form";
 import { fetchTourBySlug } from "../services/tourService.js";
 import { fetchReviews, createReview } from "../services/reviewService.js";
 import { handleApiError } from "../services/apiClient.js";
 import { useAuthStore } from "../hooks/useAuthStore.js";
 import { USER_ROLES } from "../services/config.js";
+import BookingModal from "../components/BookingModal.jsx"; // Import Booking Modal
 
 const TourDetails = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuthStore();
+
   const [tour, setTour] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+
+  // NEW: State for Booking Modal
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -97,8 +104,10 @@ const TourDetails = () => {
         </div>
       </div>
 
-      {/* 2. DETAILS GRID */}
-      <section className="grid gap-6 md:grid-cols-3">
+      {/* 2. DETAILS GRID & BOOKING ACTION */}
+      {/* Changed grid-cols-3 to grid-cols-4 to accommodate the booking button */}
+      <section className="grid gap-6 md:grid-cols-4">
+        {/* Info Cards */}
         <div className="rounded-3xl bg-white p-6 shadow-soft">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Duration
@@ -122,6 +131,16 @@ const TourDetails = () => {
           <p className="mt-2 text-sm font-medium text-slate-600">
             {tour.locations?.join(", ")}
           </p>
+        </div>
+
+        {/* NEW: Booking Button Card */}
+        <div className="flex flex-col justify-center rounded-3xl bg-slate-50 p-6 shadow-soft border border-slate-100">
+          <button
+            onClick={() => setIsBookingOpen(true)}
+            className="w-full rounded-xl bg-primary py-4 text-lg font-bold text-white shadow-lg shadow-primary/30 transition hover:scale-105 hover:bg-primary-dark active:scale-95"
+          >
+            Book Now
+          </button>
         </div>
       </section>
 
@@ -251,6 +270,14 @@ const TourDetails = () => {
           )}
         </div>
       </section>
+
+      {/* NEW: Booking Modal Integration */}
+      <BookingModal
+        isOpen={isBookingOpen}
+        onClose={() => setIsBookingOpen(false)}
+        item={tour}
+        type="tour"
+      />
     </div>
   );
 };

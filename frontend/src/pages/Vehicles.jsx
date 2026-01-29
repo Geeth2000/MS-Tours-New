@@ -1,12 +1,16 @@
 import { useEffect, useState } from "react";
 import VehicleCard from "../components/VehicleCard.jsx";
 import SectionHeading from "../components/SectionHeading.jsx";
+import BookingModal from "../components/BookingModal.jsx"; // Import Modal
 import { fetchVehicles } from "../services/vehicleService.js";
 import { handleApiError } from "../services/apiClient.js";
 
 const Vehicles = () => {
   const [filters, setFilters] = useState({ type: "", seats: "" });
   const [state, setState] = useState({ items: [], loading: true, error: null });
+
+  // NEW: State for modal
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
 
   const load = async () => {
     try {
@@ -34,6 +38,8 @@ const Vehicles = () => {
         title="Vehicle Rentals"
         subtitle="Book verified vehicles with professional drivers for island-wide coverage."
       />
+
+      {/* Search Form (Existing Code) */}
       <form
         onSubmit={handleSubmit}
         className="grid gap-4 rounded-3xl bg-white p-6 shadow-soft md:grid-cols-4"
@@ -42,7 +48,9 @@ const Vehicles = () => {
           Type
           <select
             value={filters.type}
-            onChange={(event) => setFilters((prev) => ({ ...prev, type: event.target.value }))}
+            onChange={(event) =>
+              setFilters((prev) => ({ ...prev, type: event.target.value }))
+            }
             className="mt-2 w-full rounded-full border border-slate-200 px-4 py-2 text-sm"
           >
             <option value="">All Types</option>
@@ -58,7 +66,9 @@ const Vehicles = () => {
           <input
             type="number"
             value={filters.seats}
-            onChange={(event) => setFilters((prev) => ({ ...prev, seats: event.target.value }))}
+            onChange={(event) =>
+              setFilters((prev) => ({ ...prev, seats: event.target.value }))
+            }
             className="mt-2 w-full rounded-full border border-slate-200 px-4 py-2 text-sm"
             placeholder="Seats"
           />
@@ -69,6 +79,8 @@ const Vehicles = () => {
           </button>
         </div>
       </form>
+
+      {/* List */}
       {state.loading ? (
         <div className="rounded-2xl border border-slate-200 bg-white p-6 text-center text-sm text-slate-500">
           Loading vehicles...
@@ -80,10 +92,23 @@ const Vehicles = () => {
       ) : (
         <div className="grid gap-6 md:grid-cols-3">
           {state.items.map((vehicle) => (
-            <VehicleCard key={vehicle._id} vehicle={vehicle} />
+            <VehicleCard
+              key={vehicle._id}
+              vehicle={vehicle}
+              // NEW: Pass selection handler
+              onSelect={(item) => setSelectedVehicle(item)}
+            />
           ))}
         </div>
       )}
+
+      {/* NEW: Booking Modal */}
+      <BookingModal
+        isOpen={!!selectedVehicle}
+        onClose={() => setSelectedVehicle(null)}
+        item={selectedVehicle}
+        type="vehicle"
+      />
     </div>
   );
 };
