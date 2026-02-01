@@ -29,9 +29,13 @@ const customRequestSchema = new mongoose.Schema(
     notes: {
       type: String, // For special requirements
     },
+    whatsappNumber: {
+      type: String,
+      required: true,
+    },
     status: {
       type: String,
-      enum: ["pending", "contacted", "approved", "rejected"],
+      enum: ["pending", "inProgress", "completed", "cancelled"],
       default: "pending",
     },
   },

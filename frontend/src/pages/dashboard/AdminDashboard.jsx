@@ -8,6 +8,9 @@ import {
   deleteTour,
   deleteVehicleAdmin,
   deletePackageAdmin,
+  fetchCustomRequests,
+  updateCustomRequestStatus,
+  deleteCustomRequest,
 } from "../../services/adminService.js";
 import { fetchPackages } from "../../services/packageService.js";
 import { fetchTours } from "../../services/tourService.js";
@@ -15,7 +18,7 @@ import { fetchVehicles } from "../../services/vehicleService.js";
 import {
   fetchAllBookings,
   updateBookingStatus,
-} from "../../services/bookingService.js"; // Bookings service import කළා
+} from "../../services/bookingService.js";
 import { handleApiError } from "../../services/apiClient.js";
 
 const AdminDashboard = () => {
@@ -28,7 +31,8 @@ const AdminDashboard = () => {
   const [tours, setTours] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [packages, setPackages] = useState([]);
-  const [bookings, setBookings] = useState([]); // Bookings සඳහා state එක
+  const [bookings, setBookings] = useState([]);
+  const [customRequests, setCustomRequests] = useState([]); // Customer trip requests
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -61,9 +65,11 @@ const AdminDashboard = () => {
         const res = await fetchPackages({ limit: 100 });
         setPackages(res.data);
       } else if (activeTab === "bookings") {
-        // Bookings load කිරීම
         const res = await fetchAllBookings({ limit: 100 });
         setBookings(res.data);
+      } else if (activeTab === "requests") {
+        const res = await fetchCustomRequests({ limit: 100 });
+        setCustomRequests(res);
       }
     } catch (err) {
       setError(handleApiError(err));
@@ -99,6 +105,7 @@ const AdminDashboard = () => {
       if (type === "tour") await deleteTour(id);
       if (type === "vehicle") await deleteVehicleAdmin(id);
       if (type === "package") await deletePackageAdmin(id);
+      if (type === "request") await deleteCustomRequest(id);
 
       await loadTabData();
       await loadOverview();
@@ -107,13 +114,25 @@ const AdminDashboard = () => {
     }
   };
 
-  // Booking Status වෙනස් කිරීම (Approve/Reject)
+  // Change Booking Status (Approve/Reject)
   const handleStatusChange = async (id, newStatus) => {
     try {
       await updateBookingStatus(id, { status: newStatus });
-      // UI එක update කරන්න (API call එකක් නොකර ඉක්මනට පෙන්වන්න)
+      // Update UI (Optimistic update without API call)
       setBookings((prev) =>
         prev.map((b) => (b._id === id ? { ...b, status: newStatus } : b)),
+      );
+    } catch (err) {
+      alert(handleApiError(err));
+    }
+  };
+
+  // Custom Request Status change
+  const handleRequestStatusChange = async (id, newStatus) => {
+    try {
+      await updateCustomRequestStatus(id, { status: newStatus });
+      setCustomRequests((prev) =>
+        prev.map((r) => (r._id === id ? { ...r, status: newStatus } : r)),
       );
     } catch (err) {
       alert(handleApiError(err));
@@ -164,7 +183,8 @@ const AdminDashboard = () => {
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:border-b sm:border-slate-200 sm:px-0">
         {[
           "overview",
-          "bookings", // Bookings tab එක මෙතනට දැම්මා
+          "bookings",
+          "requests", // Customer trip requests
           "users",
           "tours",
           "vehicles",
@@ -202,7 +222,7 @@ const AdminDashboard = () => {
               <StatCard
                 icon="📅"
                 label="Bookings"
-                value={bookings.length > 0 ? bookings.length : "-"} // Optional: backend එකෙන් totalBookings එවනවා නම් හොඳයි
+                value={bookings.length > 0 ? bookings.length : "-"} // Optional: Better if backend sends totalBookings
               />
               <StatCard
                 icon="🗺️"
@@ -294,6 +314,202 @@ const AdminDashboard = () => {
                   </tr>
                 ))}
               </Table>
+            </div>
+          )}
+
+          {/* CUSTOMER REQUESTS TAB */}
+          {activeTab === "requests" && (
+            <div className="space-y-6">
+              {/* Header Stats */}
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 p-5 border border-amber-100">
+                  <p className="text-xs font-bold uppercase tracking-wider text-amber-600">
+                    Pending
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-amber-700">
+                    {
+                      customRequests.filter((r) => r.status === "pending")
+                        .length
+                    }
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-blue-50 p-5 border border-sky-100">
+                  <p className="text-xs font-bold uppercase tracking-wider text-sky-600">
+                    In Progress
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-sky-700">
+                    {
+                      customRequests.filter((r) => r.status === "inProgress")
+                        .length
+                    }
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 p-5 border border-emerald-100">
+                  <p className="text-xs font-bold uppercase tracking-wider text-emerald-600">
+                    Completed
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-emerald-700">
+                    {
+                      customRequests.filter((r) => r.status === "completed")
+                        .length
+                    }
+                  </p>
+                </div>
+              </div>
+
+              {/* Requests List */}
+              <div className="space-y-4">
+                {customRequests.length === 0 && (
+                  <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 py-16 text-center">
+                    <span className="text-4xl mb-4">📋</span>
+                    <p className="text-slate-500">
+                      No custom trip requests yet.
+                    </p>
+                  </div>
+                )}
+                {customRequests.map((request) => (
+                  <div
+                    key={request._id}
+                    className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition hover:shadow-md"
+                  >
+                    {/* Request Header */}
+                    <div className="flex flex-col gap-4 border-b border-slate-50 bg-gradient-to-r from-slate-50 to-white p-5 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-sky-100 text-xl">
+                          🗺️
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                              Trip Request
+                            </span>
+                            <RequestStatusBadge status={request.status} />
+                          </div>
+                          <p className="font-bold text-slate-800">
+                            {request.user?.firstName} {request.user?.lastName}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {request.user?.email}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <select
+                          value={request.status}
+                          onChange={(e) =>
+                            handleRequestStatusChange(
+                              request._id,
+                              e.target.value,
+                            )
+                          }
+                          className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                        >
+                          <option value="pending">Pending</option>
+                          <option value="inProgress">In Progress</option>
+                          <option value="completed">Completed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                        <button
+                          onClick={() => handleDelete("request", request._id)}
+                          className="rounded-xl bg-rose-50 p-2.5 text-rose-600 transition hover:bg-rose-100"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Request Details */}
+                    <div className="grid gap-6 p-5 sm:grid-cols-2 lg:grid-cols-4">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                          📍 Destinations
+                        </p>
+                        <p className="text-sm font-medium text-slate-700">
+                          {request.destinations || "Not specified"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                          📅 Start Date
+                        </p>
+                        <p className="text-sm font-medium text-slate-700">
+                          {request.startDate
+                            ? new Date(request.startDate).toLocaleDateString()
+                            : "Not specified"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                          ⏱️ Duration
+                        </p>
+                        <p className="text-sm font-medium text-slate-700">
+                          {request.durationDays
+                            ? `${request.durationDays} Days`
+                            : "Not specified"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                          👥 Travelers
+                        </p>
+                        <p className="text-sm font-medium text-slate-700">
+                          {request.travelers || "Not specified"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                          📱 WhatsApp
+                        </p>
+                        {request.whatsappNumber ? (
+                          <a
+                            href={`https://wa.me/${request.whatsappNumber.replace(/[^0-9+]/g, "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline transition-colors"
+                          >
+                            <span>💬</span>
+                            {request.whatsappNumber}
+                          </a>
+                        ) : (
+                          <p className="text-sm font-medium text-slate-700">
+                            Not specified
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Budget & Notes */}
+                    <div className="border-t border-slate-50 bg-slate-50/50 p-5">
+                      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                            💰 Budget Range
+                          </p>
+                          <p className="text-sm font-bold text-emerald-600">
+                            {request.budgetRange
+                              ? `LKR ${request.budgetRange}`
+                              : "Not specified"}
+                          </p>
+                        </div>
+                        {request.notes && (
+                          <div className="flex-1 sm:ml-8">
+                            <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">
+                              📝 Special Notes
+                            </p>
+                            <p className="text-sm text-slate-600 bg-white rounded-xl p-3 border border-slate-100">
+                              {request.notes}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      <p className="mt-4 text-[10px] text-slate-400">
+                        Requested on{" "}
+                        {new Date(request.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -468,6 +684,30 @@ const StatusBadge = ({ status }) => (
     {status}
   </span>
 );
+
+const RequestStatusBadge = ({ status }) => {
+  const styles = {
+    pending: "bg-amber-100 text-amber-700",
+    inProgress: "bg-sky-100 text-sky-700",
+    completed: "bg-emerald-100 text-emerald-700",
+    cancelled: "bg-rose-100 text-rose-700",
+  };
+  const labels = {
+    pending: "Pending",
+    inProgress: "In Progress",
+    completed: "Completed",
+    cancelled: "Cancelled",
+  };
+  return (
+    <span
+      className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ${
+        styles[status] || styles.pending
+      }`}
+    >
+      {labels[status] || status}
+    </span>
+  );
+};
 
 const DeleteButton = ({ onClick }) => (
   <button

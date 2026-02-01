@@ -2,7 +2,7 @@ import { useState, memo } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 
 // 1. Use 'memo' to prevent unnecessary re-renders in large lists
-const VehicleCard = memo(({ vehicle, onSelect }) => {
+const VehicleCard = memo(({ vehicle, onSelect, onViewDetails }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Safety check: Ensure images is always an array
@@ -23,7 +23,10 @@ const VehicleCard = memo(({ vehicle, onSelect }) => {
   };
 
   return (
-    <article className="group overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition hover:border-sky-100 hover:shadow-lg">
+    <article
+      className="group overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition hover:border-sky-100 hover:shadow-lg cursor-pointer"
+      onClick={() => onViewDetails?.(vehicle)}
+    >
       {/* 2. Image Section: Used aspect-ratio for efficient layout */}
       <div className="relative aspect-[4/3] w-full bg-slate-200 group/image">
         {imageCount > 0 ? (
@@ -115,7 +118,10 @@ const VehicleCard = memo(({ vehicle, onSelect }) => {
           <button
             type="button"
             className="mt-4 w-full rounded-xl bg-sky-500 py-2.5 text-sm font-bold text-white transition-all hover:bg-sky-600 hover:shadow-md active:scale-[0.98]"
-            onClick={() => onSelect(vehicle)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(vehicle);
+            }}
           >
             Book Now
           </button>

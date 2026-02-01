@@ -4,8 +4,8 @@ const DashboardSidebar = ({ links }) => {
   const location = useLocation();
 
   return (
-    <aside className="w-full rounded-2xl bg-white p-6 shadow-soft md:w-72">
-      <nav className="flex flex-col gap-2 text-sm font-medium text-slate-600">
+    <aside className="w-full shrink-0 self-start rounded-2xl bg-white p-4 shadow-soft md:sticky md:top-24 md:w-56">
+      <nav className="flex flex-col gap-1.5 text-sm font-medium text-slate-600">
         {links.map((link) => {
           if (link.to.startsWith("#")) {
             const active = location.hash === link.to;
@@ -14,7 +14,9 @@ const DashboardSidebar = ({ links }) => {
                 key={link.to}
                 href={link.to}
                 className={`rounded-xl px-4 py-3 transition ${
-                  active ? "bg-primary text-white shadow" : "hover:bg-primary/10"
+                  active
+                    ? "bg-primary text-white shadow"
+                    : "hover:bg-primary/10"
                 }`}
               >
                 {link.label}
@@ -28,7 +30,9 @@ const DashboardSidebar = ({ links }) => {
               to={link.to}
               className={({ isActive }) =>
                 `rounded-xl px-4 py-3 transition ${
-                  isActive ? "bg-primary text-white shadow" : "hover:bg-primary/10"
+                  isActive
+                    ? "bg-primary text-white shadow"
+                    : "hover:bg-primary/10"
                 }`
               }
             >

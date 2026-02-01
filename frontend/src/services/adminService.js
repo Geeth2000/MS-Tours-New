@@ -46,3 +46,20 @@ export const deletePackageAdmin = async (id) => {
   const { data } = await apiClient.delete(`/admin/packages/${id}`);
   return data;
 };
+
+// --- CUSTOM REQUESTS ---
+
+export const fetchCustomRequests = async (params = {}) => {
+  const { data } = await apiClient.get("/custom-requests", { params });
+  return data.data;
+};
+
+export const updateCustomRequestStatus = async (id, payload) => {
+  const { data } = await apiClient.patch(`/custom-requests/${id}`, payload);
+  return data.data;
+};
+
+export const deleteCustomRequest = async (id) => {
+  const { data } = await apiClient.delete(`/custom-requests/${id}`);
+  return data;
+};

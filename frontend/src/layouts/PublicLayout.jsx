@@ -12,15 +12,8 @@ const PublicLayout = () => {
     <div className="flex min-h-screen flex-col bg-slate-50">
       <Navbar />
 
-      {/* Logic:
-        - If isHomePage is true: Use 'w-full' (Full Width) so the Hero image can stretch.
-        - If isHomePage is false: Use 'max-w-6xl' and padding to center content for other pages.
-      */}
-      <main
-        className={`flex-1 ${
-          isHomePage ? "w-full" : "mx-auto w-full max-w-6xl px-4 py-12"
-        }`}
-      >
+      {/* Full width layout for all pages */}
+      <main className="w-full flex-1">
         <Outlet />
       </main>
 

@@ -22,6 +22,7 @@ import AdminDashboard from "./pages/dashboard/AdminDashboard.jsx";
 import AddTour from "./pages/admin/AddTour.jsx";
 import { USER_ROLES } from "./services/config.js";
 import PlanTrip from "./pages/PlanTrip.jsx";
+import OwnerLayout from "./layouts/OwnerLayout.jsx";
 
 const travelerLinks = [
   { to: "/dashboard", label: "Overview" },
@@ -70,13 +71,7 @@ const App = () => (
     <Route element={<ProtectedRoute roles={[USER_ROLES.TOURIST]} />}>
       <Route
         path="dashboard"
-        element={
-          <DashboardLayout
-            links={travelerLinks}
-            title="Traveler Dashboard"
-            description="Track bookings, manage reviews, and personalize your travel preferences."
-          />
-        }
+        element={<DashboardLayout links={travelerLinks} />}
       >
         <Route index element={<UserDashboard />} />
       </Route>
@@ -84,16 +79,7 @@ const App = () => (
 
     {/* Protected: Vehicle Owner */}
     <Route element={<ProtectedRoute roles={[USER_ROLES.VEHICLE_OWNER]} />}>
-      <Route
-        path="owner"
-        element={
-          <DashboardLayout
-            links={ownerLinks}
-            title="Vehicle Owner Portal"
-            description="Manage fleet, create packages, and respond to booking requests."
-          />
-        }
-      >
+      <Route path="owner" element={<OwnerLayout />}>
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<OwnerDashboard />} />
       </Route>
@@ -101,16 +87,7 @@ const App = () => (
 
     {/* Protected: Admin */}
     <Route element={<ProtectedRoute roles={[USER_ROLES.ADMIN]} />}>
-      <Route
-        path="admin"
-        element={
-          <DashboardLayout
-            links={adminLinks}
-            title="Admin Control Center"
-            description="Approve providers, monitor performance, and keep M&S Tours running smoothly."
-          />
-        }
-      >
+      <Route path="admin" element={<DashboardLayout links={adminLinks} />}>
         <Route index element={<Navigate to="dashboard" replace />} />
         <Route path="dashboard" element={<AdminDashboard />} />
 
