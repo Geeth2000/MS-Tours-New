@@ -95,3 +95,54 @@ export const updateProfile = asyncHandler(async (req, res) => {
     .status(StatusCodes.OK)
     .json(apiResponse({ message: "Profile updated", data: user }));
 });
+
+export const googleAuth = asyncHandler(async (req, res) => {
+  const { credential } = req.body;
+
+  if (!credential) {
+    throw new ApiError(
+      StatusCodes.BAD_REQUEST,
+      "Google credential is required",
+    );
+  }
+
+  // Decode the JWT token from Google
+  const decoded = JSON.parse(
+    Buffer.from(credential.split(".")[1], "base64").toString(),
+  );
+
+  const { sub: googleId, email, given_name, family_name, picture } = decoded;
+
+  // Check if user exists
+  let user = await User.findOne({ $or: [{ googleId }, { email }] });
+
+  if (user) {
+    // Update googleId if not set (user registered with email first)
+    if (!user.googleId) {
+      user.googleId = googleId;
+      await user.save();
+    }
+  } else {
+    // Create new user
+    user = await User.create({
+      googleId,
+      email,
+      firstName: given_name || "User",
+      lastName: family_name || "",
+      profileImage: picture,
+      role: USER_ROLES.TOURIST,
+    });
+  }
+
+  user.lastLoginAt = new Date();
+  await user.save();
+
+  if (user.role === USER_ROLES.VEHICLE_OWNER && !user.onboarding.isApproved) {
+    throw new ApiError(
+      StatusCodes.FORBIDDEN,
+      `Account pending approval. Status: ${user.onboarding.approvalStatus}`,
+    );
+  }
+
+  return res.status(StatusCodes.OK).json(buildAuthResponse(user));
+});

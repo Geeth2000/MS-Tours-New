@@ -23,6 +23,7 @@ import AddTour from "./pages/admin/AddTour.jsx";
 import { USER_ROLES } from "./services/config.js";
 import PlanTrip from "./pages/PlanTrip.jsx";
 import OwnerLayout from "./layouts/OwnerLayout.jsx";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const travelerLinks = [
   { to: "/dashboard", label: "Overview" },
@@ -44,60 +45,64 @@ const adminLinks = [
   { to: "#users", label: "Users" },
 ];
 
+const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
 const App = () => (
-  <Routes>
-    {/* Public Routes */}
-    <Route element={<PublicLayout />}>
-      <Route index element={<Home />} />
-      <Route path="tours" element={<Tours />} />
-      <Route path="tours/:slug" element={<TourDetails />} />
-      <Route path="vehicles" element={<Vehicles />} />
-      <Route path="packages" element={<Packages />} />
-      <Route path="ai-assistant" element={<AiAssistant />} />
-      <Route path="about" element={<About />} />
-      <Route path="contact" element={<Contact />} />
-      <Route path="awaiting-approval" element={<AwaitingApproval />} />
-      <Route path="unauthorized" element={<Unauthorized />} />
-      <Route path="plan-trip" element={<PlanTrip />} />
-    </Route>
-
-    {/* Auth Routes (Login/Register) */}
-    <Route element={<AuthLayout />}>
-      <Route path="login" element={<Login />} />
-      <Route path="register" element={<Register />} />
-    </Route>
-
-    {/* Protected: Tourist */}
-    <Route element={<ProtectedRoute roles={[USER_ROLES.TOURIST]} />}>
-      <Route
-        path="dashboard"
-        element={<DashboardLayout links={travelerLinks} />}
-      >
-        <Route index element={<UserDashboard />} />
+  <GoogleOAuthProvider clientId={clientId}>
+    <Routes>
+      {/* Public Routes */}
+      <Route element={<PublicLayout />}>
+        <Route index element={<Home />} />
+        <Route path="tours" element={<Tours />} />
+        <Route path="tours/:slug" element={<TourDetails />} />
+        <Route path="vehicles" element={<Vehicles />} />
+        <Route path="packages" element={<Packages />} />
+        <Route path="ai-assistant" element={<AiAssistant />} />
+        <Route path="about" element={<About />} />
+        <Route path="contact" element={<Contact />} />
+        <Route path="awaiting-approval" element={<AwaitingApproval />} />
+        <Route path="unauthorized" element={<Unauthorized />} />
+        <Route path="plan-trip" element={<PlanTrip />} />
       </Route>
-    </Route>
 
-    {/* Protected: Vehicle Owner */}
-    <Route element={<ProtectedRoute roles={[USER_ROLES.VEHICLE_OWNER]} />}>
-      <Route path="owner" element={<OwnerLayout />}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<OwnerDashboard />} />
+      {/* Auth Routes (Login/Register) */}
+      <Route element={<AuthLayout />}>
+        <Route path="login" element={<Login />} />
+        <Route path="register" element={<Register />} />
       </Route>
-    </Route>
 
-    {/* Protected: Admin */}
-    <Route element={<ProtectedRoute roles={[USER_ROLES.ADMIN]} />}>
-      <Route path="admin" element={<DashboardLayout links={adminLinks} />}>
-        <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<AdminDashboard />} />
-
-        {/* 2. ADDED: Secure Route for Add Tour */}
-        <Route path="add-tour" element={<AddTour />} />
+      {/* Protected: Tourist */}
+      <Route element={<ProtectedRoute roles={[USER_ROLES.TOURIST]} />}>
+        <Route
+          path="dashboard"
+          element={<DashboardLayout links={travelerLinks} />}
+        >
+          <Route index element={<UserDashboard />} />
+        </Route>
       </Route>
-    </Route>
 
-    <Route path="*" element={<NotFound />} />
-  </Routes>
+      {/* Protected: Vehicle Owner */}
+      <Route element={<ProtectedRoute roles={[USER_ROLES.VEHICLE_OWNER]} />}>
+        <Route path="owner" element={<OwnerLayout />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<OwnerDashboard />} />
+        </Route>
+      </Route>
+
+      {/* Protected: Admin */}
+      <Route element={<ProtectedRoute roles={[USER_ROLES.ADMIN]} />}>
+        <Route path="admin" element={<DashboardLayout links={adminLinks} />}>
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+
+          {/* 2. ADDED: Secure Route for Add Tour */}
+          <Route path="add-tour" element={<AddTour />} />
+        </Route>
+      </Route>
+
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  </GoogleOAuthProvider>
 );
 
 export default App;

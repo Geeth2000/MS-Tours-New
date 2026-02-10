@@ -23,9 +23,13 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
       minlength: 8,
       select: false,
+    },
+    googleId: {
+      type: String,
+      unique: true,
+      sparse: true,
     },
     role: {
       type: String,
@@ -58,7 +62,14 @@ const userSchema = new mongoose.Schema(
       interests: [
         {
           type: String,
-          enum: ["beach", "nature", "culture", "wildlife", "adventure", "wellness"],
+          enum: [
+            "beach",
+            "nature",
+            "culture",
+            "wildlife",
+            "adventure",
+            "wellness",
+          ],
         },
       ],
     },
@@ -73,7 +84,9 @@ const userSchema = new mongoose.Schema(
         type: String,
         enum: ["pending", "approved", "rejected"],
         default: function defaultStatus() {
-          return this.role === USER_ROLES.VEHICLE_OWNER ? "pending" : "approved";
+          return this.role === USER_ROLES.VEHICLE_OWNER
+            ? "pending"
+            : "approved";
         },
       },
       rejectionReason: String,
@@ -115,7 +128,7 @@ const userSchema = new mongoose.Schema(
         return ret;
       },
     },
-  }
+  },
 );
 
 userSchema.virtual("fullName").get(function getFullName() {

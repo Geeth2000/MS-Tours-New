@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { login } from "../services/authService.js";
+import { GoogleLogin } from "@react-oauth/google";
+import { login, googleLogin } from "../services/authService.js";
 import { handleApiError } from "../services/apiClient.js";
 import { useAuthStore } from "../hooks/useAuthStore.js";
 import { USER_ROLES } from "../services/config.js";
@@ -22,17 +23,43 @@ const Login = () => {
     formState: { isSubmitting },
   } = useForm();
   const [error, setError] = useState(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const onSubmit = async (formData) => {
     setError(null);
     try {
       const response = await login(formData);
       setAuth(response);
-      const redirect = location.state?.from?.pathname || roleDashboards[response.user.role] || "/";
+      const redirect =
+        location.state?.from?.pathname ||
+        roleDashboards[response.user.role] ||
+        "/";
       navigate(redirect, { replace: true });
     } catch (err) {
       setError(handleApiError(err));
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError(null);
+    setGoogleLoading(true);
+    try {
+      const response = await googleLogin(credentialResponse.credential);
+      setAuth(response);
+      const redirect =
+        location.state?.from?.pathname ||
+        roleDashboards[response.user.role] ||
+        "/";
+      navigate(redirect, { replace: true });
+    } catch (err) {
+      setError(handleApiError(err));
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError("Google sign-in failed. Please try again.");
   };
 
   return (
@@ -62,13 +89,44 @@ const Login = () => {
             placeholder="Enter password"
           />
         </label>
-        <button type="submit" className="btn-primary w-full" disabled={isSubmitting}>
+        <button
+          type="submit"
+          className="btn-primary w-full"
+          disabled={isSubmitting}
+        >
           {isSubmitting ? "Signing in..." : "Sign In"}
         </button>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-2 text-slate-500">
+              Or continue with
+            </span>
+          </div>
+        </div>
+
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            useOneTap
+            theme="outline"
+            size="large"
+            text="signin_with"
+            shape="rectangular"
+            width={350}
+          />
+        </div>
       </form>
 
       <p className="mt-6 text-center text-sm text-slate-500">
-        New to M&S Tours? <Link to="/register" className="text-primary">Create an account</Link>
+        New to M&S Tours?{" "}
+        <Link to="/register" className="text-primary">
+          Create an account
+        </Link>
       </p>
     </div>
   );
