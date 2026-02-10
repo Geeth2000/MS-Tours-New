@@ -66,13 +66,22 @@ export const getTours = asyncHandler(async (req, res) => {
         limit: Number(limit),
         totalPages: Math.ceil(total / Number(limit || 1)),
       },
-    })
+    }),
   );
 });
 
 export const getTourBySlug = asyncHandler(async (req, res) => {
   const { slug } = req.params;
   const tour = await Tour.findOne({ slug });
+  if (!tour) {
+    throw new ApiError(StatusCodes.NOT_FOUND, "Tour not found");
+  }
+  return res.status(StatusCodes.OK).json(apiResponse({ data: tour }));
+});
+
+export const getTourById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const tour = await Tour.findById(id);
   if (!tour) {
     throw new ApiError(StatusCodes.NOT_FOUND, "Tour not found");
   }

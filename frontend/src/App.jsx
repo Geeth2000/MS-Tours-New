@@ -22,6 +22,7 @@ import UserDashboard from "./pages/dashboard/UserDashboard.jsx";
 import OwnerDashboard from "./pages/dashboard/OwnerDashboard.jsx";
 import AdminDashboard from "./pages/dashboard/AdminDashboard.jsx";
 import AddTour from "./pages/admin/AddTour.jsx";
+import EditTour from "./pages/admin/EditTour.jsx";
 import { USER_ROLES } from "./services/config.js";
 import PlanTrip from "./pages/PlanTrip.jsx";
 import OwnerLayout from "./layouts/OwnerLayout.jsx";
@@ -124,6 +125,7 @@ const App = () => (
 
             {/* 2. ADDED: Secure Route for Add Tour */}
             <Route path="add-tour" element={<AddTour />} />
+            <Route path="tours/edit/:id" element={<EditTour />} />
           </Route>
         </Route>
 

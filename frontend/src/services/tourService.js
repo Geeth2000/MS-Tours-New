@@ -12,7 +12,7 @@ export const fetchTourBySlug = async (slug) => {
 
 // --- NEW: Added for Admin Edit Pages ---
 export const fetchTourById = async (id) => {
-  const { data } = await apiClient.get(`/tours/${id}`);
+  const { data } = await apiClient.get(`/tours/id/${id}`);
   return data.data;
 };
 // ---------------------------------------

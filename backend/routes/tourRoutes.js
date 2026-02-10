@@ -3,17 +3,22 @@ import {
   createTour,
   getTours,
   getTourBySlug,
+  getTourById,
   updateTour,
   deleteTour,
 } from "../controllers/tourController.js";
 import { authenticate, requireRoles } from "../middleware/authMiddleware.js";
 import { validateRequest } from "../middleware/validateRequest.js";
-import { createTourSchema, updateTourSchema } from "../validators/tourValidators.js";
+import {
+  createTourSchema,
+  updateTourSchema,
+} from "../validators/tourValidators.js";
 import { USER_ROLES } from "../config/constants.js";
 
 const router = Router();
 
 router.get("/", getTours);
+router.get("/id/:id", getTourById);
 router.get("/:slug", getTourBySlug);
 
 router.post(
@@ -21,7 +26,7 @@ router.post(
   authenticate,
   requireRoles(USER_ROLES.ADMIN),
   validateRequest(createTourSchema),
-  createTour
+  createTour,
 );
 
 router.put(
@@ -29,14 +34,9 @@ router.put(
   authenticate,
   requireRoles(USER_ROLES.ADMIN),
   validateRequest(updateTourSchema),
-  updateTour
+  updateTour,
 );
 
-router.delete(
-  "/:id",
-  authenticate,
-  requireRoles(USER_ROLES.ADMIN),
-  deleteTour
-);
+router.delete("/:id", authenticate, requireRoles(USER_ROLES.ADMIN), deleteTour);
 
 export default router;
