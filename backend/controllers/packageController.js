@@ -16,15 +16,25 @@ const ensureAccess = (pkg, user) => {
 };
 
 export const createPackage = asyncHandler(async (req, res) => {
-  const pkg = await Package.create({ ...req.body, owner: req.user._id });
+  const data = { ...req.body, owner: req.user._id };
+  // Remove empty vehicle field to avoid ObjectId cast errors
+  if (!data.vehicle) delete data.vehicle;
+  const pkg = await Package.create(data);
   return res
     .status(StatusCodes.CREATED)
     .json(apiResponse({ message: "Package created", data: pkg }));
 });
 
 export const getPackages = asyncHandler(async (req, res) => {
-  const { packageType, minPrice, maxPrice, owner, status = "published", page = 1, limit = 12 } =
-    req.query;
+  const {
+    packageType,
+    minPrice,
+    maxPrice,
+    owner,
+    status = "published",
+    page = 1,
+    limit = 12,
+  } = req.query;
 
   const query = {};
   if (packageType) query.packageType = packageType;
@@ -33,8 +43,10 @@ export const getPackages = asyncHandler(async (req, res) => {
   if (minPrice || maxPrice) {
     query.$or = [];
     const priceConditions = [];
-    if (minPrice) priceConditions.push({ pricePerPerson: { $gte: Number(minPrice) } });
-    if (maxPrice) priceConditions.push({ pricePerPerson: { $lte: Number(maxPrice) } });
+    if (minPrice)
+      priceConditions.push({ pricePerPerson: { $gte: Number(minPrice) } });
+    if (maxPrice)
+      priceConditions.push({ pricePerPerson: { $lte: Number(maxPrice) } });
     if (minPrice || maxPrice) {
       query.$or.push(...priceConditions);
       query.$or.push({
@@ -65,7 +77,7 @@ export const getPackages = asyncHandler(async (req, res) => {
         limit: Number(limit),
         totalPages: Math.ceil(total / Number(limit || 1)),
       },
-    })
+    }),
   );
 });
 
@@ -81,7 +93,9 @@ export const getPackageById = asyncHandler(async (req, res) => {
 });
 
 export const getMyPackages = asyncHandler(async (req, res) => {
-  const items = await Package.find({ owner: req.user._id }).sort({ createdAt: -1 });
+  const items = await Package.find({ owner: req.user._id }).sort({
+    createdAt: -1,
+  });
   return res.status(StatusCodes.OK).json(apiResponse({ data: items }));
 });
 
@@ -89,7 +103,11 @@ export const updatePackage = asyncHandler(async (req, res) => {
   const pkg = await Package.findById(req.params.id);
   ensureAccess(pkg, req.user);
 
-  Object.assign(pkg, req.body);
+  const data = { ...req.body };
+  // Remove empty vehicle field to avoid ObjectId cast errors
+  if (!data.vehicle) delete data.vehicle;
+
+  Object.assign(pkg, data);
   await pkg.save();
 
   return res

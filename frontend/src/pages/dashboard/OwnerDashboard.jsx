@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from "react";
+import { useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { useConfirm } from "../../components/ConfirmModal.jsx";
@@ -12,6 +13,7 @@ import {
 import {
   fetchMyPackages,
   createPackage,
+  updatePackage,
   deletePackage,
 } from "../../services/packageService.js";
 import {
@@ -33,6 +35,7 @@ const PACKAGE_FORM_DEFAULTS = {
 const OwnerDashboard = () => {
   const { user } = useAuthStore();
   const confirm = useConfirm();
+  const location = useLocation();
   const [vehicles, setVehicles] = useState([]);
   const [packages, setPackages] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -41,14 +44,19 @@ const OwnerDashboard = () => {
 
   // New state for file handling
   const [selectedFiles, setSelectedFiles] = useState([]);
+  const [selectedPackageFiles, setSelectedPackageFiles] = useState([]);
+  const [existingPackageImages, setExistingPackageImages] = useState([]);
+  const [existingVehicleImages, setExistingVehicleImages] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState(null);
+  const [editingPackage, setEditingPackage] = useState(null);
   const [showMobileForm, setShowMobileForm] = useState(false);
   const [showMobilePackageForm, setShowMobilePackageForm] = useState(false);
 
   const vehicleForm = useForm();
   const packageForm = useForm({ defaultValues: PACKAGE_FORM_DEFAULTS });
   const vehicleFormRef = useRef(null);
+  const packageFormRef = useRef(null);
 
   const load = async () => {
     try {
@@ -67,6 +75,25 @@ const OwnerDashboard = () => {
 
   useEffect(() => {
     load();
+  }, []);
+
+  // Handle URL hash changes for sidebar navigation
+  useEffect(() => {
+    const hash = location.hash.replace("#", "");
+    if (hash && ["fleet", "packages", "bookings"].includes(hash)) {
+      setActiveTab(hash);
+    } else if (!location.hash) {
+      setActiveTab("overview");
+    }
+  }, [location.hash]);
+
+  // Listen for sidebar navigation events
+  useEffect(() => {
+    const handleTabChange = (e) => {
+      setActiveTab(e.detail);
+    };
+    window.addEventListener("ownerTabChange", handleTabChange);
+    return () => window.removeEventListener("ownerTabChange", handleTabChange);
   }, []);
 
   // --- HANDLERS ---
@@ -103,6 +130,13 @@ const OwnerDashboard = () => {
         features: featuresArray,
       };
 
+      // Clean up empty optional fields
+      if (!payload.make) delete payload.make;
+      if (!payload.model) delete payload.model;
+      if (!payload.year) delete payload.year;
+      if (!payload.transmission) delete payload.transmission;
+      if (!payload.fuelType) delete payload.fuelType;
+
       // 4. Send to backend
       await createVehicle(payload);
 
@@ -114,6 +148,7 @@ const OwnerDashboard = () => {
       toast.success("Vehicle added successfully!");
     } catch (err) {
       console.error(err);
+      toast.error(handleApiError(err));
       setError(handleApiError(err));
     } finally {
       setIsUploading(false); // Stop loading state
@@ -121,7 +156,22 @@ const OwnerDashboard = () => {
   });
 
   const onPackageSubmit = packageForm.handleSubmit(async (formData) => {
+    if (editingPackage) {
+      await handlePackageUpdate(formData);
+      return;
+    }
     try {
+      setIsUploading(true);
+
+      // Upload package images to Supabase
+      let uploadedImageUrls = [];
+      if (selectedPackageFiles && selectedPackageFiles.length > 0) {
+        const uploadPromises = Array.from(selectedPackageFiles).map((file) =>
+          uploadfile(file),
+        );
+        uploadedImageUrls = await Promise.all(uploadPromises);
+      }
+
       // Process array fields: includes, excludes, locations
       let includesArray = [];
       if (formData.includes && typeof formData.includes === "string") {
@@ -152,15 +202,33 @@ const OwnerDashboard = () => {
         includes: includesArray,
         excludes: excludesArray,
         locations: locationsArray,
+        images: uploadedImageUrls,
       };
 
+      // Remove empty vehicle field (validation requires valid ObjectId or undefined)
+      if (!payload.vehicle) {
+        delete payload.vehicle;
+      }
+      // Remove status field if not set (let backend use default)
+      if (!payload.status) {
+        delete payload.status;
+      }
+
+      console.log("Creating package with payload:", payload);
       await createPackage(payload);
+      console.log("Package created successfully");
       packageForm.reset(PACKAGE_FORM_DEFAULTS);
+      setSelectedPackageFiles([]);
       setShowMobilePackageForm(false); // Hide mobile form after creation
       await load();
       toast.success("Package created successfully!");
     } catch (err) {
-      setError(handleApiError(err));
+      console.error("Package creation error:", err);
+      const errorMessage = handleApiError(err);
+      setError(errorMessage);
+      toast.error(errorMessage || "Failed to create package");
+    } finally {
+      setIsUploading(false);
     }
   });
 
@@ -185,6 +253,8 @@ const OwnerDashboard = () => {
   const handleVehicleEdit = (vehicle) => {
     setEditingVehicle(vehicle);
     setShowMobileForm(true); // Show form on mobile when editing
+    setExistingVehicleImages(vehicle.images || []);
+    setSelectedFiles([]);
     // Pre-fill form with vehicle data
     vehicleForm.reset({
       title: vehicle.title,
@@ -224,16 +294,18 @@ const OwnerDashboard = () => {
   const handleVehicleUpdate = async (formData) => {
     try {
       setIsUploading(true);
-      let imageUrls = [...(editingVehicle.images || [])];
 
       // Upload new images if selected
+      let newImageUrls = [];
       if (selectedFiles && selectedFiles.length > 0) {
         const uploadPromises = Array.from(selectedFiles).map((file) =>
           uploadfile(file),
         );
-        const newImageUrls = await Promise.all(uploadPromises);
-        imageUrls = [...imageUrls, ...newImageUrls];
+        newImageUrls = await Promise.all(uploadPromises);
       }
+
+      // Combine existing (after deletions) with new uploads
+      const imageUrls = [...existingVehicleImages, ...newImageUrls];
 
       // Process features
       let featuresArray = [];
@@ -250,16 +322,25 @@ const OwnerDashboard = () => {
         features: featuresArray,
       };
 
+      // Clean up empty optional fields
+      if (!payload.make) delete payload.make;
+      if (!payload.model) delete payload.model;
+      if (!payload.year) delete payload.year;
+      if (!payload.transmission) delete payload.transmission;
+      if (!payload.fuelType) delete payload.fuelType;
+
       await updateVehicle(editingVehicle._id, payload);
 
       vehicleForm.reset();
       setSelectedFiles([]);
+      setExistingVehicleImages([]);
       setEditingVehicle(null);
       setShowMobileForm(false); // Hide mobile form after update
       await load();
       toast.success("Vehicle updated successfully!");
     } catch (err) {
       console.error(err);
+      toast.error(handleApiError(err));
       setError(handleApiError(err));
     } finally {
       setIsUploading(false);
@@ -270,6 +351,7 @@ const OwnerDashboard = () => {
     setEditingVehicle(null);
     vehicleForm.reset();
     setSelectedFiles([]);
+    setExistingVehicleImages([]);
     setShowMobileForm(false); // Hide mobile form on cancel
   };
 
@@ -291,6 +373,124 @@ const OwnerDashboard = () => {
     }
   };
 
+  const handlePackageEdit = (pkg) => {
+    setEditingPackage(pkg);
+    setShowMobilePackageForm(true);
+    setExistingPackageImages(pkg.images || []);
+    setSelectedPackageFiles([]);
+    // Pre-fill form with package data
+    packageForm.reset({
+      title: pkg.title,
+      description: pkg.description || "",
+      packageType: pkg.packageType,
+      durationDays: pkg.durationDays,
+      pricePerGroup: pkg.pricePerGroup || "",
+      pricePerPerson: pkg.pricePerPerson || "",
+      includes: pkg.includes?.join(", ") || "",
+      excludes: pkg.excludes?.join(", ") || "",
+      locations: pkg.locations?.join(", ") || "",
+      vehicle: pkg.vehicle || "",
+      status: pkg.status || "pending",
+    });
+
+    // Scroll to form and focus on first input
+    setTimeout(() => {
+      if (packageFormRef.current) {
+        packageFormRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+        const firstInput = packageFormRef.current.querySelector(
+          'input[name="title"]',
+        );
+        if (firstInput) {
+          firstInput.focus();
+        }
+      }
+    }, 100);
+  };
+
+  const handlePackageUpdate = async (formData) => {
+    try {
+      setIsUploading(true);
+
+      // Upload new package images
+      let uploadedImageUrls = [];
+      if (selectedPackageFiles && selectedPackageFiles.length > 0) {
+        const uploadPromises = Array.from(selectedPackageFiles).map((file) =>
+          uploadfile(file),
+        );
+        uploadedImageUrls = await Promise.all(uploadPromises);
+      }
+
+      // Combine existing and new images
+      const allImages = [...existingPackageImages, ...uploadedImageUrls];
+
+      // Process array fields
+      let includesArray = [];
+      if (formData.includes && typeof formData.includes === "string") {
+        includesArray = formData.includes
+          .split(",")
+          .map((i) => i.trim())
+          .filter((i) => i.length > 0);
+      }
+
+      let excludesArray = [];
+      if (formData.excludes && typeof formData.excludes === "string") {
+        excludesArray = formData.excludes
+          .split(",")
+          .map((e) => e.trim())
+          .filter((e) => e.length > 0);
+      }
+
+      let locationsArray = [];
+      if (formData.locations && typeof formData.locations === "string") {
+        locationsArray = formData.locations
+          .split(",")
+          .map((l) => l.trim())
+          .filter((l) => l.length > 0);
+      }
+
+      const payload = {
+        ...formData,
+        includes: includesArray,
+        excludes: excludesArray,
+        locations: locationsArray,
+        images: allImages,
+      };
+
+      // Remove empty vehicle field (validation requires valid ObjectId or undefined)
+      if (!payload.vehicle) {
+        delete payload.vehicle;
+      }
+
+      console.log("Updating package with payload:", payload);
+      await updatePackage(editingPackage._id, payload);
+      packageForm.reset(PACKAGE_FORM_DEFAULTS);
+      setEditingPackage(null);
+      setExistingPackageImages([]);
+      setSelectedPackageFiles([]);
+      setShowMobilePackageForm(false);
+      await load();
+      toast.success("Package updated successfully!");
+    } catch (err) {
+      console.error("Package update error:", err);
+      const errorMessage = handleApiError(err);
+      setError(errorMessage);
+      toast.error(errorMessage || "Failed to update package");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleCancelPackageEdit = () => {
+    setEditingPackage(null);
+    packageForm.reset(PACKAGE_FORM_DEFAULTS);
+    setExistingPackageImages([]);
+    setSelectedPackageFiles([]);
+    setShowMobilePackageForm(false);
+  };
+
   const handleBookingStatus = async (id, status) => {
     try {
       await updateBookingStatus(id, { status });
@@ -308,20 +508,20 @@ const OwnerDashboard = () => {
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
 
   return (
-    <div className="flex flex-col gap-8 pb-12 font-sans text-slate-600">
-      {/* 1. HERO HEADER */}
-      <header className="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-slate-900 to-slate-800 p-10 text-white shadow-xl">
-        <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
+    <div className="flex flex-col gap-6 pb-12 font-sans text-slate-600">
+      {/* HERO HEADER */}
+      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
+        <div className="relative z-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">
+            <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
               Welcome, {user?.firstName || "Partner"}!
             </h1>
-            <p className="mt-2 text-slate-400">
+            <p className="mt-1 text-sm text-slate-400">
               Manage your Sri Lankan travel business efficiently.
             </p>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex gap-3">
             <StatBadge
               label="Total Earnings"
               value={`LKR ${totalEarnings.toLocaleString()}`}
@@ -333,7 +533,7 @@ const OwnerDashboard = () => {
             />
           </div>
         </div>
-        <div className="absolute -right-20 -top-20 h-80 w-80 rounded-full bg-sky-500/20 blur-3xl" />
+        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-sky-500/20 blur-3xl" />
       </header>
 
       {error && (
@@ -342,28 +542,8 @@ const OwnerDashboard = () => {
         </div>
       )}
 
-      {/* 2. NAVIGATION TABS */}
-      <nav className="flex gap-8 border-b border-slate-200 px-4">
-        {["overview", "bookings", "fleet", "packages"].map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`relative pb-4 text-sm font-semibold tracking-wide transition-colors ${
-              activeTab === tab
-                ? "text-sky-600"
-                : "text-slate-400 hover:text-slate-600"
-            }`}
-          >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            {activeTab === tab && (
-              <span className="absolute bottom-0 left-0 h-0.5 w-full bg-sky-500" />
-            )}
-          </button>
-        ))}
-      </nav>
-
-      {/* 3. MAIN CONTENT AREA */}
-      <main className="min-h-[500px]">
+      {/* MAIN CONTENT AREA */}
+      <main className="min-h-[400px]">
         {/* --- OVERVIEW TAB --- */}
         {activeTab === "overview" && (
           <div className="grid gap-8 lg:grid-cols-3">
@@ -649,20 +829,83 @@ const OwnerDashboard = () => {
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
                         Images
                       </p>
+
+                      {/* Existing Images (when editing) */}
+                      {existingVehicleImages.length > 0 && (
+                        <div>
+                          <label className="mb-2 block text-xs font-bold uppercase text-slate-400">
+                            Current Images
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {existingVehicleImages.map((url, index) => (
+                              <div key={index} className="group relative">
+                                <img
+                                  src={url}
+                                  alt={`Vehicle image ${index + 1}`}
+                                  className="h-16 w-16 rounded-lg object-cover shadow"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setExistingVehicleImages((prev) =>
+                                      prev.filter((_, i) => i !== index),
+                                    )
+                                  }
+                                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition group-hover:opacity-100"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Upload New Images */}
                       <div>
                         <label className="mb-1 block text-xs font-semibold text-slate-700">
-                          Vehicle Images
+                          {editingVehicle
+                            ? "Add More Images"
+                            : "Vehicle Images"}
                         </label>
                         <input
                           type="file"
                           multiple
-                          accept="image/*"
-                          onChange={(e) => setSelectedFiles(e.target.files)}
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            // Validate file size (max 5MB each)
+                            const validFiles = files.filter((file) => {
+                              if (file.size > 5 * 1024 * 1024) {
+                                toast.error(`${file.name} exceeds 5MB limit`);
+                                return false;
+                              }
+                              return true;
+                            });
+                            setSelectedFiles(validFiles);
+                          }}
                           className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-sky-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-sky-700 hover:file:bg-sky-100 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
                         />
                         <p className="mt-1 text-xs text-slate-400">
-                          Select multiple images. (Max 5 recommended)
+                          JPG, PNG, WebP (Max 5MB each, 5 images recommended)
                         </p>
+                        {/* Preview selected files */}
+                        {selectedFiles.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {Array.from(selectedFiles).map((file, index) => (
+                              <div key={index} className="group relative">
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={`New upload ${index + 1}`}
+                                  className="h-16 w-16 rounded-lg object-cover shadow ring-2 ring-sky-400"
+                                />
+                                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-xs text-white">
+                                  +
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -724,10 +967,24 @@ const OwnerDashboard = () => {
                   showMobilePackageForm ? "block" : "hidden lg:block"
                 }`}
               >
-                <div className="sticky top-24 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm max-h-[85vh] overflow-y-auto">
-                  <h3 className="mb-4 text-lg font-bold text-slate-800">
-                    Create Package
-                  </h3>
+                <div
+                  className="sticky top-24 rounded-3xl border border-slate-100 bg-white p-6 shadow-sm max-h-[85vh] overflow-y-auto"
+                  ref={packageFormRef}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-slate-800">
+                      {editingPackage ? "Edit Package" : "Create Package"}
+                    </h3>
+                    {editingPackage && (
+                      <button
+                        type="button"
+                        onClick={handleCancelPackageEdit}
+                        className="text-sm text-slate-400 hover:text-slate-600"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
                   <form onSubmit={onPackageSubmit} className="space-y-4">
                     {/* Basic Information */}
                     <div className="rounded-2xl bg-slate-50 p-4 space-y-4">
@@ -860,6 +1117,91 @@ const OwnerDashboard = () => {
                       </p>
                     </div>
 
+                    {/* Package Images */}
+                    <div className="rounded-2xl bg-slate-50 p-4 space-y-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                        Package Images
+                      </p>
+
+                      {/* Existing Images (when editing) */}
+                      {existingPackageImages.length > 0 && (
+                        <div>
+                          <label className="mb-2 block text-xs font-bold uppercase text-slate-400">
+                            Current Images
+                          </label>
+                          <div className="flex flex-wrap gap-2">
+                            {existingPackageImages.map((url, index) => (
+                              <div key={index} className="group relative">
+                                <img
+                                  src={url}
+                                  alt={`Package image ${index + 1}`}
+                                  className="h-16 w-16 rounded-lg object-cover shadow"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setExistingPackageImages((prev) =>
+                                      prev.filter((_, i) => i !== index),
+                                    )
+                                  }
+                                  className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white opacity-0 transition group-hover:opacity-100"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Upload New Images */}
+                      <div>
+                        <label className="mb-1 block text-xs font-bold uppercase text-slate-400">
+                          {editingPackage ? "Add More Images" : "Upload Images"}
+                        </label>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/jpeg,image/png,image/webp"
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            // Validate file size (max 5MB each)
+                            const validFiles = files.filter((file) => {
+                              if (file.size > 5 * 1024 * 1024) {
+                                toast.error(`${file.name} exceeds 5MB limit`);
+                                return false;
+                              }
+                              return true;
+                            });
+                            setSelectedPackageFiles(validFiles);
+                          }}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm text-slate-700 file:mr-4 file:rounded-full file:border-0 file:bg-sky-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-sky-600 hover:file:bg-sky-100"
+                        />
+                        <p className="mt-1 text-xs text-slate-500">
+                          Max 5MB per image. Accepted: JPG, PNG, WebP
+                        </p>
+                      </div>
+
+                      {/* Preview selected files */}
+                      {selectedPackageFiles.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {Array.from(selectedPackageFiles).map(
+                            (file, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center gap-2 rounded-lg bg-sky-50 px-3 py-1.5 text-xs text-sky-700"
+                              >
+                                <span>📷</span>
+                                <span className="max-w-[100px] truncate">
+                                  {file.name}
+                                </span>
+                              </div>
+                            ),
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     {/* Status */}
                     <div className="rounded-2xl bg-slate-50 p-4 space-y-4">
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
@@ -872,7 +1214,16 @@ const OwnerDashboard = () => {
                       />
                     </div>
 
-                    <SubmitButton label="Create Package" />
+                    <SubmitButton
+                      label={
+                        isUploading
+                          ? "Uploading..."
+                          : editingPackage
+                            ? "Update Package"
+                            : "Create Package"
+                      }
+                      disabled={isUploading}
+                    />
                   </form>
                 </div>
               </div>
@@ -886,7 +1237,9 @@ const OwnerDashboard = () => {
                     subtitle={`${p.packageType} • ${p.durationDays} Days`}
                     price={p.pricePerGroup || p.pricePerPerson}
                     isGroup={!!p.pricePerGroup}
+                    image={p.images?.[0]}
                     onDelete={() => handlePackageDelete(p._id)}
+                    onEdit={() => handlePackageEdit(p)}
                     type="package"
                   />
                 ))}
@@ -902,12 +1255,12 @@ const OwnerDashboard = () => {
 // --- SUB-COMPONENTS ---
 const StatBadge = ({ label, value, highlight }) => (
   <div
-    className={`rounded-2xl p-4 backdrop-blur-md ${highlight ? "bg-white text-sky-600" : "bg-white/10 text-white"}`}
+    className={`rounded-xl px-3 py-2 backdrop-blur-md sm:rounded-2xl sm:px-4 sm:py-3 ${highlight ? "bg-white text-sky-600" : "bg-white/10 text-white"}`}
   >
-    <p className="text-xs font-medium uppercase tracking-wider opacity-80">
+    <p className="text-[10px] font-medium uppercase tracking-wider opacity-80 sm:text-xs">
       {label}
     </p>
-    <p className="mt-1 text-xl font-bold">{value}</p>
+    <p className="mt-0.5 text-base font-bold sm:mt-1 sm:text-lg">{value}</p>
   </div>
 );
 

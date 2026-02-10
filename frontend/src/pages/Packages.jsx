@@ -42,14 +42,14 @@ const Packages = () => {
   ).length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-emerald-50 to-teal-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50 to-blue-50">
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-600 to-cyan-700 pb-32">
+      <div className="relative overflow-hidden bg-gradient-to-br from-sky-600 via-blue-600 to-indigo-700 pb-32">
         {/* Animated Background */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute left-1/3 top-1/3 h-96 w-96 animate-pulse rounded-full bg-white blur-3xl" />
           <div
-            className="absolute right-1/3 bottom-1/3 h-96 w-96 animate-pulse rounded-full bg-green-300 blur-3xl"
+            className="absolute right-1/3 bottom-1/3 h-96 w-96 animate-pulse rounded-full bg-sky-300 blur-3xl"
             style={{ animationDelay: "1.5s" }}
           />
         </div>
@@ -68,7 +68,7 @@ const Packages = () => {
                 Travel Packages
               </span>
             </h1>
-            <p className="text-lg text-emerald-100 max-w-2xl mx-auto">
+            <p className="text-lg text-sky-100 max-w-2xl mx-auto">
               Flexible itineraries curated by expert drivers and local guides
             </p>
           </div>
@@ -79,15 +79,15 @@ const Packages = () => {
               <div className="text-3xl font-bold text-white">
                 {state.items.length}
               </div>
-              <div className="text-sm text-emerald-200">Packages</div>
+              <div className="text-sm text-sky-200">Packages</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-white">100%</div>
-              <div className="text-sm text-emerald-200">Customizable</div>
+              <div className="text-sm text-sky-200">Customizable</div>
             </div>
             <div className="text-center">
               <div className="text-3xl font-bold text-white">4.9★</div>
-              <div className="text-sm text-emerald-200">Avg Rating</div>
+              <div className="text-sm text-sky-200">Avg Rating</div>
             </div>
           </div>
         </div>
@@ -97,13 +97,13 @@ const Packages = () => {
       <div className="relative mx-auto -mt-24 max-w-7xl px-4 pb-16">
         {/* Filter Card - Elevated */}
         <div className="relative overflow-hidden rounded-3xl bg-white shadow-2xl mb-8">
-          <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br from-emerald-400 via-teal-500 to-cyan-600 p-1 opacity-20" />
+          <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br from-sky-400 via-blue-500 to-indigo-600 p-1 opacity-20" />
 
           {/* Mobile Filter Toggle */}
           <div className="lg:hidden p-4 border-b border-slate-100">
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-4 font-bold text-white shadow-lg transition hover:shadow-xl"
+              className="w-full flex items-center justify-between rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 px-6 py-4 font-bold text-white shadow-lg transition hover:shadow-xl"
             >
               <div className="flex items-center gap-2">
                 <span className="text-xl">🎁</span>
@@ -138,7 +138,7 @@ const Packages = () => {
                       packageType: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-3 text-sm font-medium text-slate-700 transition focus:border-emerald-400 focus:shadow-lg focus:shadow-emerald-100 focus:outline-none"
+                  className="w-full rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-3 text-sm font-medium text-slate-700 transition focus:border-sky-400 focus:shadow-lg focus:shadow-sky-100 focus:outline-none"
                 >
                   <option value="">All Package Types</option>
                   <option value="dayTrip">☀️ Day Trip</option>
@@ -161,7 +161,7 @@ const Packages = () => {
                       maxPrice: event.target.value,
                     }))
                   }
-                  className="w-full rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-3 text-sm font-medium text-slate-700 placeholder:text-slate-400 transition focus:border-emerald-400 focus:shadow-lg focus:shadow-emerald-100 focus:outline-none"
+                  className="w-full rounded-xl border-2 border-slate-200 bg-gradient-to-br from-slate-50 to-white px-4 py-3 text-sm font-medium text-slate-700 placeholder:text-slate-400 transition focus:border-sky-400 focus:shadow-lg focus:shadow-sky-100 focus:outline-none"
                   placeholder="LKR 100000"
                 />
               </div>
@@ -170,7 +170,7 @@ const Packages = () => {
               <div className="flex flex-col gap-2">
                 <button
                   type="submit"
-                  className="group flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-600 to-cyan-600 px-6 py-3 font-bold text-white shadow-xl shadow-emerald-200 transition hover:shadow-2xl hover:shadow-emerald-300 hover:scale-105"
+                  className="group flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 px-6 py-3 font-bold text-white shadow-xl shadow-sky-200 transition hover:shadow-2xl hover:shadow-sky-300 hover:scale-105"
                 >
                   <span>Search</span>
                   <span className="text-xl transition-transform group-hover:translate-x-1">
@@ -192,7 +192,7 @@ const Packages = () => {
         {/* Results Section */}
         {state.loading ? (
           <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200 bg-white p-16 shadow-sm">
-            <div className="h-16 w-16 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600 mb-4"></div>
+            <div className="h-16 w-16 animate-spin rounded-full border-4 border-sky-200 border-t-sky-600 mb-4"></div>
             <p className="text-lg font-semibold text-slate-600">
               Finding perfect packages...
             </p>
@@ -216,7 +216,7 @@ const Packages = () => {
             </p>
             <button
               onClick={handleReset}
-              className="rounded-xl bg-emerald-500 px-6 py-3 font-semibold text-white transition hover:bg-emerald-600"
+              className="rounded-xl bg-sky-500 px-6 py-3 font-semibold text-white transition hover:bg-sky-600"
             >
               Clear All Filters
             </button>
@@ -235,7 +235,7 @@ const Packages = () => {
                 </p>
               </div>
               {activeFilterCount > 0 && (
-                <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-600">
+                <div className="flex items-center gap-2 rounded-full bg-sky-50 px-4 py-2 text-sm font-semibold text-sky-600">
                   <span className="text-lg">✓</span>
                   <span>
                     {activeFilterCount}{" "}
