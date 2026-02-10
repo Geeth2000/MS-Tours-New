@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
+import toast from "react-hot-toast";
+import { useConfirm } from "../../components/ConfirmModal.jsx";
 import { useAuthStore } from "../../hooks/useAuthStore.js";
 import {
   fetchMyVehicles,
@@ -30,6 +32,7 @@ const PACKAGE_FORM_DEFAULTS = {
 
 const OwnerDashboard = () => {
   const { user } = useAuthStore();
+  const confirm = useConfirm();
   const [vehicles, setVehicles] = useState([]);
   const [packages, setPackages] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -108,7 +111,7 @@ const OwnerDashboard = () => {
       setSelectedFiles([]); // Clear selected files
       setShowMobileForm(false); // Hide mobile form after creation
       await load();
-      alert("Vehicle added successfully!");
+      toast.success("Vehicle added successfully!");
     } catch (err) {
       console.error(err);
       setError(handleApiError(err));
@@ -155,16 +158,24 @@ const OwnerDashboard = () => {
       packageForm.reset(PACKAGE_FORM_DEFAULTS);
       setShowMobilePackageForm(false); // Hide mobile form after creation
       await load();
-      alert("Package created successfully!");
+      toast.success("Package created successfully!");
     } catch (err) {
       setError(handleApiError(err));
     }
   });
 
   const handleVehicleDelete = async (id) => {
-    if (!window.confirm("Remove this vehicle?")) return;
+    const confirmed = await confirm({
+      title: "Remove Vehicle",
+      message:
+        "Are you sure you want to remove this vehicle? This action cannot be undone.",
+      confirmText: "Remove",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       await deleteVehicle(id);
+      toast.success("Vehicle removed successfully");
       await load();
     } catch (err) {
       setError(handleApiError(err));
@@ -246,7 +257,7 @@ const OwnerDashboard = () => {
       setEditingVehicle(null);
       setShowMobileForm(false); // Hide mobile form after update
       await load();
-      alert("Vehicle updated successfully!");
+      toast.success("Vehicle updated successfully!");
     } catch (err) {
       console.error(err);
       setError(handleApiError(err));
@@ -263,9 +274,17 @@ const OwnerDashboard = () => {
   };
 
   const handlePackageDelete = async (id) => {
-    if (!window.confirm("Delete this package?")) return;
+    const confirmed = await confirm({
+      title: "Delete Package",
+      message:
+        "Are you sure you want to delete this package? This action cannot be undone.",
+      confirmText: "Delete",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       await deletePackage(id);
+      toast.success("Package deleted successfully");
       await load();
     } catch (err) {
       setError(handleApiError(err));

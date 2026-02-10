@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
+import toast from "react-hot-toast";
 import { login, googleLogin } from "../services/authService.js";
 import { handleApiError } from "../services/apiClient.js";
 import { useAuthStore } from "../hooks/useAuthStore.js";
@@ -30,13 +31,16 @@ const Login = () => {
     try {
       const response = await login(formData);
       setAuth(response);
+      toast.success("Welcome back!");
       const redirect =
         location.state?.from?.pathname ||
         roleDashboards[response.user.role] ||
         "/";
       navigate(redirect, { replace: true });
     } catch (err) {
-      setError(handleApiError(err));
+      const errorMsg = handleApiError(err);
+      setError(errorMsg);
+      toast.error(errorMsg);
     }
   };
 
@@ -46,20 +50,25 @@ const Login = () => {
     try {
       const response = await googleLogin(credentialResponse.credential);
       setAuth(response);
+      toast.success("Welcome back!");
       const redirect =
         location.state?.from?.pathname ||
         roleDashboards[response.user.role] ||
         "/";
       navigate(redirect, { replace: true });
     } catch (err) {
-      setError(handleApiError(err));
+      const errorMsg = handleApiError(err);
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setGoogleLoading(false);
     }
   };
 
   const handleGoogleError = () => {
-    setError("Google sign-in failed. Please try again.");
+    const errorMsg = "Google sign-in failed. Please try again.";
+    setError(errorMsg);
+    toast.error(errorMsg);
   };
 
   return (

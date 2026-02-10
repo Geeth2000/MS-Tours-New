@@ -1,5 +1,6 @@
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { createTour } from "../../services/tourService.js";
 import { handleApiError } from "../../services/apiClient.js";
 import { useState } from "react";
@@ -47,7 +48,7 @@ const AddTour = () => {
 
       // 3. Send to Backend
       await createTour(payload);
-      alert("Tour created successfully!");
+      toast.success("Tour created successfully!");
       navigate("/admin/dashboard");
     } catch (err) {
       console.error(err);

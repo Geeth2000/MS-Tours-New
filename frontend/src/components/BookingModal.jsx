@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { createBooking } from "../services/bookingService.js";
 import { useAuthStore } from "../hooks/useAuthStore.js";
 
@@ -31,7 +32,7 @@ const BookingModal = ({ isOpen, onClose, item, type }) => {
     setError(null);
 
     if (!user) {
-      alert("Please login to book this item.");
+      toast.error("Please login to book this item.");
       navigate("/login");
       return;
     }

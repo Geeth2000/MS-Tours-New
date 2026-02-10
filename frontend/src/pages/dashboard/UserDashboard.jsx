@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
+import { useConfirm } from "../../components/ConfirmModal.jsx";
 import {
   fetchMyBookings,
   cancelBooking,
@@ -14,6 +16,7 @@ import { useAuthStore } from "../../hooks/useAuthStore.js";
 
 const UserDashboard = () => {
   const { user } = useAuthStore();
+  const confirm = useConfirm();
   const [bookings, setBookings] = useState([]);
   const [customRequests, setCustomRequests] = useState([]);
   const [error, setError] = useState(null);
@@ -42,10 +45,17 @@ const UserDashboard = () => {
   }, []);
 
   const handleCancel = async (id) => {
-    if (!window.confirm("Are you sure you want to cancel this booking?"))
-      return;
+    const confirmed = await confirm({
+      title: "Cancel Booking",
+      message:
+        "Are you sure you want to cancel this booking? This action cannot be undone.",
+      confirmText: "Yes, Cancel",
+      variant: "warning",
+    });
+    if (!confirmed) return;
     try {
       await cancelBooking(id);
+      toast.success("Booking cancelled successfully");
       await load();
     } catch (err) {
       setError(handleApiError(err));
@@ -53,10 +63,17 @@ const UserDashboard = () => {
   };
 
   const handleDeleteRequest = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this trip request?"))
-      return;
+    const confirmed = await confirm({
+      title: "Delete Trip Request",
+      message:
+        "Are you sure you want to delete this trip request? This action cannot be undone.",
+      confirmText: "Delete",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     try {
       await deleteMyCustomRequest(id);
+      toast.success("Trip request deleted");
       await load();
     } catch (err) {
       setError(handleApiError(err));

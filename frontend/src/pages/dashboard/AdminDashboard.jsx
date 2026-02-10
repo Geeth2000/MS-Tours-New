@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
+import { useConfirm } from "../../components/ConfirmModal.jsx";
 import StatCard from "../../components/StatCard.jsx";
 import {
   fetchAdminSummary,
@@ -23,6 +25,7 @@ import { handleApiError } from "../../services/apiClient.js";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const [activeTab, setActiveTab] = useState("overview");
   const [summary, setSummary] = useState(null);
 
@@ -93,12 +96,13 @@ const AdminDashboard = () => {
   // --- ACTIONS ---
 
   const handleDelete = async (type, id) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete this ${type}? This action cannot be undone.`,
-      )
-    )
-      return;
+    const confirmed = await confirm({
+      title: `Delete ${type.charAt(0).toUpperCase() + type.slice(1)}`,
+      message: `Are you sure you want to delete this ${type}? This action cannot be undone.`,
+      confirmText: "Delete",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     try {
       if (type === "user") await deleteUser(id);
@@ -107,10 +111,13 @@ const AdminDashboard = () => {
       if (type === "package") await deletePackageAdmin(id);
       if (type === "request") await deleteCustomRequest(id);
 
+      toast.success(
+        `${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully`,
+      );
       await loadTabData();
       await loadOverview();
     } catch (err) {
-      alert(handleApiError(err));
+      toast.error(handleApiError(err));
     }
   };
 
@@ -123,7 +130,7 @@ const AdminDashboard = () => {
         prev.map((b) => (b._id === id ? { ...b, status: newStatus } : b)),
       );
     } catch (err) {
-      alert(handleApiError(err));
+      toast.error(handleApiError(err));
     }
   };
 
@@ -135,7 +142,7 @@ const AdminDashboard = () => {
         prev.map((r) => (r._id === id ? { ...r, status: newStatus } : r)),
       );
     } catch (err) {
-      alert(handleApiError(err));
+      toast.error(handleApiError(err));
     }
   };
 

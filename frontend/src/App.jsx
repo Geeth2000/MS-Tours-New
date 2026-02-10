@@ -1,4 +1,6 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import { ConfirmProvider } from "./components/ConfirmModal.jsx";
 import PublicLayout from "./layouts/PublicLayout.jsx";
 import AuthLayout from "./layouts/AuthLayout.jsx";
 import DashboardLayout from "./layouts/DashboardLayout.jsx";
@@ -49,59 +51,85 @@ const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const App = () => (
   <GoogleOAuthProvider clientId={clientId}>
-    <Routes>
-      {/* Public Routes */}
-      <Route element={<PublicLayout />}>
-        <Route index element={<Home />} />
-        <Route path="tours" element={<Tours />} />
-        <Route path="tours/:slug" element={<TourDetails />} />
-        <Route path="vehicles" element={<Vehicles />} />
-        <Route path="packages" element={<Packages />} />
-        <Route path="ai-assistant" element={<AiAssistant />} />
-        <Route path="about" element={<About />} />
-        <Route path="contact" element={<Contact />} />
-        <Route path="awaiting-approval" element={<AwaitingApproval />} />
-        <Route path="unauthorized" element={<Unauthorized />} />
-        <Route path="plan-trip" element={<PlanTrip />} />
-      </Route>
-
-      {/* Auth Routes (Login/Register) */}
-      <Route element={<AuthLayout />}>
-        <Route path="login" element={<Login />} />
-        <Route path="register" element={<Register />} />
-      </Route>
-
-      {/* Protected: Tourist */}
-      <Route element={<ProtectedRoute roles={[USER_ROLES.TOURIST]} />}>
-        <Route
-          path="dashboard"
-          element={<DashboardLayout links={travelerLinks} />}
-        >
-          <Route index element={<UserDashboard />} />
+    <ConfirmProvider>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 4000,
+          style: {
+            background: "#fff",
+            color: "#1e293b",
+            borderRadius: "12px",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+          },
+          success: {
+            iconTheme: {
+              primary: "#22c55e",
+              secondary: "#fff",
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: "#ef4444",
+              secondary: "#fff",
+            },
+          },
+        }}
+      />
+      <Routes>
+        {/* Public Routes */}
+        <Route element={<PublicLayout />}>
+          <Route index element={<Home />} />
+          <Route path="tours" element={<Tours />} />
+          <Route path="tours/:slug" element={<TourDetails />} />
+          <Route path="vehicles" element={<Vehicles />} />
+          <Route path="packages" element={<Packages />} />
+          <Route path="ai-assistant" element={<AiAssistant />} />
+          <Route path="about" element={<About />} />
+          <Route path="contact" element={<Contact />} />
+          <Route path="awaiting-approval" element={<AwaitingApproval />} />
+          <Route path="unauthorized" element={<Unauthorized />} />
+          <Route path="plan-trip" element={<PlanTrip />} />
         </Route>
-      </Route>
 
-      {/* Protected: Vehicle Owner */}
-      <Route element={<ProtectedRoute roles={[USER_ROLES.VEHICLE_OWNER]} />}>
-        <Route path="owner" element={<OwnerLayout />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<OwnerDashboard />} />
+        {/* Auth Routes (Login/Register) */}
+        <Route element={<AuthLayout />}>
+          <Route path="login" element={<Login />} />
+          <Route path="register" element={<Register />} />
         </Route>
-      </Route>
 
-      {/* Protected: Admin */}
-      <Route element={<ProtectedRoute roles={[USER_ROLES.ADMIN]} />}>
-        <Route path="admin" element={<DashboardLayout links={adminLinks} />}>
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-
-          {/* 2. ADDED: Secure Route for Add Tour */}
-          <Route path="add-tour" element={<AddTour />} />
+        {/* Protected: Tourist */}
+        <Route element={<ProtectedRoute roles={[USER_ROLES.TOURIST]} />}>
+          <Route
+            path="dashboard"
+            element={<DashboardLayout links={travelerLinks} />}
+          >
+            <Route index element={<UserDashboard />} />
+          </Route>
         </Route>
-      </Route>
 
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        {/* Protected: Vehicle Owner */}
+        <Route element={<ProtectedRoute roles={[USER_ROLES.VEHICLE_OWNER]} />}>
+          <Route path="owner" element={<OwnerLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<OwnerDashboard />} />
+          </Route>
+        </Route>
+
+        {/* Protected: Admin */}
+        <Route element={<ProtectedRoute roles={[USER_ROLES.ADMIN]} />}>
+          <Route path="admin" element={<DashboardLayout links={adminLinks} />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+
+            {/* 2. ADDED: Secure Route for Add Tour */}
+            <Route path="add-tour" element={<AddTour />} />
+          </Route>
+        </Route>
+
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </ConfirmProvider>
   </GoogleOAuthProvider>
 );
 
