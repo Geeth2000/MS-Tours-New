@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useConfirm } from "../../components/ConfirmModal.jsx";
+import ProfileEditModal from "../../components/ProfileEditModal.jsx";
 import {
   fetchMyBookings,
   cancelBooking,
@@ -23,6 +24,7 @@ const UserDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("upcoming");
   const [editingRequest, setEditingRequest] = useState(null);
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   const load = async () => {
     try {
@@ -115,13 +117,68 @@ const UserDashboard = () => {
       {/* 1. HERO HEADER */}
       <header className="relative overflow-hidden rounded-[2rem] bg-gradient-to-r from-sky-500 to-blue-600 p-10 text-white shadow-xl">
         <div className="relative z-10 flex flex-col justify-between gap-6 md:flex-row md:items-center">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-white">
-              Welcome back, {user?.firstName}!
-            </h1>
-            <p className="mt-2 text-sky-100 opacity-90">
-              Ready for your next adventure in Sri Lanka?
-            </p>
+          <div className="flex items-center gap-5">
+            {/* Profile Photo */}
+            <div className="relative group">
+              {user?.profileImage ? (
+                <img
+                  src={user.profileImage}
+                  alt={`${user.firstName}'s profile`}
+                  className="h-20 w-20 rounded-full object-cover border-4 border-white/30 shadow-lg"
+                />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-white/30 bg-white/20 text-3xl font-bold text-white shadow-lg">
+                  {user?.firstName?.[0]}
+                  {user?.lastName?.[0]}
+                </div>
+              )}
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Edit Profile"
+              >
+                <svg
+                  className="h-6 w-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight text-white">
+                Welcome back, {user?.firstName}!
+              </h1>
+              <p className="mt-2 text-sky-100 opacity-90">
+                Ready for your next adventure in Sri Lanka?
+              </p>
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-sky-100 hover:text-white transition"
+              >
+                <svg
+                  className="h-3 w-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+                Edit Profile
+              </button>
+            </div>
           </div>
 
           <div className="flex gap-4">
@@ -136,6 +193,12 @@ const UserDashboard = () => {
         {/* Decorative elements */}
         <div className="absolute -right-10 -bottom-10 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
       </header>
+
+      {/* Profile Edit Modal */}
+      <ProfileEditModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
 
       {error && (
         <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600 shadow-sm">

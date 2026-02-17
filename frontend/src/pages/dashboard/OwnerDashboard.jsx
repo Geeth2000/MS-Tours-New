@@ -3,6 +3,7 @@ import { useLocation } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
 import { useConfirm } from "../../components/ConfirmModal.jsx";
+import ProfileEditModal from "../../components/ProfileEditModal.jsx";
 import { useAuthStore } from "../../hooks/useAuthStore.js";
 import {
   fetchMyVehicles,
@@ -41,6 +42,7 @@ const OwnerDashboard = () => {
   const [bookings, setBookings] = useState([]);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("overview");
+  const [showProfileModal, setShowProfileModal] = useState(false);
 
   // New state for file handling
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -512,13 +514,68 @@ const OwnerDashboard = () => {
       {/* HERO HEADER */}
       <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 p-6 text-white shadow-lg sm:p-8">
         <div className="relative z-10 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
-              Welcome, {user?.firstName || "Partner"}!
-            </h1>
-            <p className="mt-1 text-sm text-slate-400">
-              Manage your Sri Lankan travel business efficiently.
-            </p>
+          <div className="flex items-center gap-4">
+            {/* Profile Photo */}
+            <div className="relative group">
+              {user?.profileImage ? (
+                <img
+                  src={user.profileImage}
+                  alt={`${user?.firstName}'s profile`}
+                  className="h-16 w-16 rounded-full object-cover border-3 border-white/20 shadow-lg"
+                />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-full border-3 border-white/20 bg-white/10 text-xl font-bold text-white shadow-lg">
+                  {user?.firstName?.[0]}
+                  {user?.lastName?.[0]}
+                </div>
+              )}
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Edit Profile"
+              >
+                <svg
+                  className="h-5 w-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+              </button>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-white sm:text-2xl">
+                Welcome, {user?.firstName || "Partner"}!
+              </h1>
+              <p className="mt-1 text-sm text-slate-400">
+                Manage your Sri Lankan travel business efficiently.
+              </p>
+              <button
+                onClick={() => setShowProfileModal(true)}
+                className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-white transition"
+              >
+                <svg
+                  className="h-3 w-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                  />
+                </svg>
+                Edit Profile
+              </button>
+            </div>
           </div>
 
           <div className="flex gap-3">
@@ -535,6 +592,12 @@ const OwnerDashboard = () => {
         </div>
         <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-sky-500/20 blur-3xl" />
       </header>
+
+      {/* Profile Edit Modal */}
+      <ProfileEditModal
+        isOpen={showProfileModal}
+        onClose={() => setShowProfileModal(false)}
+      />
 
       {error && (
         <div className="rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-600 shadow-sm">

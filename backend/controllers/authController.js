@@ -17,6 +17,8 @@ const buildAuthResponse = (user) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        phone: user.phone,
+        profileImage: user.profileImage,
         role: user.role,
         onboarding: user.onboarding,
       },

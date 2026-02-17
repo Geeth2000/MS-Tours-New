@@ -6,8 +6,11 @@ export const registerSchema = Joi.object({
   lastName: Joi.string().trim().min(2).max(50).required(),
   email: Joi.string().email().required(),
   password: Joi.string().min(8).max(128).required(),
-  role: Joi.string().valid(...Object.values(USER_ROLES)).default(USER_ROLES.TOURIST),
+  role: Joi.string()
+    .valid(...Object.values(USER_ROLES))
+    .default(USER_ROLES.TOURIST),
   phone: Joi.string().trim().optional(),
+  profileImage: Joi.string().allow("", null).optional(),
   onboarding: Joi.object({
     documents: Joi.object({
       nicNumber: Joi.string().trim().optional(),
@@ -23,18 +26,20 @@ export const loginSchema = Joi.object({
 });
 
 export const updateProfileSchema = Joi.object({
-  firstName: Joi.string().trim().min(2).max(50).optional(),
-  lastName: Joi.string().trim().min(2).max(50).optional(),
-  phone: Joi.string().trim().optional(),
+  firstName: Joi.string().trim().min(2).max(50),
+  lastName: Joi.string().trim().min(2).max(50),
+  email: Joi.string().email(),
+  phone: Joi.string().allow("", null),
+  profileImage: Joi.string().allow("", null),
   address: Joi.object({
     street: Joi.string().trim().allow("", null),
     city: Joi.string().trim().allow("", null),
     district: Joi.string().trim().allow("", null),
     country: Joi.string().trim().allow("", null),
-  }).optional(),
+  }),
   preferences: Joi.object({
-    budget: Joi.number().min(0).optional(),
-    durationDays: Joi.number().min(0).optional(),
-    interests: Joi.array().items(Joi.string()).optional(),
-  }).optional(),
+    budget: Joi.number().min(0),
+    durationDays: Joi.number().min(0),
+    interests: Joi.array().items(Joi.string()),
+  }),
 });

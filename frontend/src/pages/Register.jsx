@@ -5,11 +5,15 @@ import { register as registerUser } from "../services/authService.js";
 import { handleApiError } from "../services/apiClient.js";
 import { useAuthStore } from "../hooks/useAuthStore.js";
 import { USER_ROLES } from "../services/config.js";
+import uploadfile from "../utils/mediaUpload.js";
 
 const Register = () => {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [error, setError] = useState(null);
+  const [profilePreview, setProfilePreview] = useState(null);
+  const [profileFile, setProfileFile] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const {
     register,
@@ -25,9 +29,34 @@ const Register = () => {
   // Watch the role to show/hide the extra fields
   const role = watch("role");
 
+  const handleProfileImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setProfileFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeProfileImage = () => {
+    setProfileFile(null);
+    setProfilePreview(null);
+  };
+
   const onSubmit = async (formData) => {
     setError(null);
     try {
+      setIsUploading(true);
+
+      // Upload profile image if selected
+      let profileImageUrl = null;
+      if (profileFile) {
+        profileImageUrl = await uploadfile(profileFile);
+      }
+
       // 1. Separate the "document" fields from the rest of the form data
       const {
         nicNumber,
@@ -39,6 +68,7 @@ const Register = () => {
       // 2. Build the payload exactly how your User.js model wants it
       const payload = {
         ...baseData, // firstName, lastName, email, etc.
+        profileImage: profileImageUrl,
         onboarding:
           baseData.role === USER_ROLES.VEHICLE_OWNER
             ? {
@@ -61,6 +91,8 @@ const Register = () => {
       }
     } catch (err) {
       setError(handleApiError(err));
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -114,6 +146,72 @@ const Register = () => {
             placeholder="Minimum 8 characters"
           />
         </label>
+
+        {/* Profile Photo Upload */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-slate-600">
+            Profile Photo (Optional)
+          </label>
+          <div className="flex items-center gap-4">
+            {profilePreview ? (
+              <div className="relative">
+                <img
+                  src={profilePreview}
+                  alt="Profile preview"
+                  className="h-20 w-20 rounded-full object-cover border-2 border-sky-200"
+                />
+                <button
+                  type="button"
+                  onClick={removeProfileImage}
+                  className="absolute -top-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white text-xs hover:bg-red-600"
+                >
+                  ×
+                </button>
+              </div>
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-slate-300 bg-slate-50">
+                <svg
+                  className="h-8 w-8 text-slate-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+            )}
+            <div className="flex-1">
+              <label className="cursor-pointer inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+                Choose Photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleProfileImageChange}
+                  className="hidden"
+                />
+              </label>
+              <p className="mt-1 text-xs text-slate-500">JPG, PNG up to 5MB</p>
+            </div>
+          </div>
+        </div>
 
         <label className="block text-sm font-medium text-slate-600">
           Phone
@@ -171,9 +269,11 @@ const Register = () => {
         <button
           type="submit"
           className="btn-primary w-full"
-          disabled={isSubmitting}
+          disabled={isSubmitting || isUploading}
         >
-          {isSubmitting ? "Creating account..." : "Create Account"}
+          {isSubmitting || isUploading
+            ? "Creating account..."
+            : "Create Account"}
         </button>
       </form>
 

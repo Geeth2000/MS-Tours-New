@@ -201,6 +201,20 @@ const AuthButtons = ({
     if (closeMenu) closeMenu();
   };
 
+  const ProfileAvatar = () =>
+    user?.profileImage ? (
+      <img
+        src={user.profileImage}
+        alt={`${user.firstName}'s profile`}
+        className="h-8 w-8 rounded-full object-cover border-2 border-sky-200"
+      />
+    ) : (
+      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sky-100 text-xs font-bold text-sky-600">
+        {user?.firstName?.[0]}
+        {user?.lastName?.[0]}
+      </div>
+    );
+
   if (user) {
     return (
       <>
@@ -216,9 +230,10 @@ const AuthButtons = ({
             onClick={() =>
               onNavigate(roleDashboards[user.role] || "/dashboard")
             }
-            className={`rounded-full border border-sky-100 bg-sky-50 px-5 py-2.5 text-sm font-bold text-sky-600 transition hover:bg-sky-100 hover:text-sky-700 ${isMobile ? "w-full" : ""}`}
+            className={`flex items-center gap-2 rounded-full border border-sky-100 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-600 transition hover:bg-sky-100 hover:text-sky-700 ${isMobile ? "w-full justify-center" : ""}`}
           >
-            Dashboard
+            <ProfileAvatar />
+            <span>{isMobile ? "Dashboard" : user.firstName}</span>
           </button>
         )}
         <button

@@ -1,5 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useState } from "react";
+import { useAuthStore } from "../hooks/useAuthStore.js";
 
 const ownerLinks = [
   { to: "/owner/dashboard", label: "Overview", icon: "📊", hash: null },
@@ -25,6 +26,7 @@ const ownerLinks = [
 
 const OwnerSidebar = () => {
   const location = useLocation();
+  const { user } = useAuthStore();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
   const isActive = (link) => {
@@ -50,6 +52,22 @@ const OwnerSidebar = () => {
     }
   };
 
+  const ProfileAvatar = ({ size = "h-10 w-10", textSize = "text-sm" }) =>
+    user?.profileImage ? (
+      <img
+        src={user.profileImage}
+        alt={`${user.firstName}'s profile`}
+        className={`${size} rounded-xl object-cover`}
+      />
+    ) : (
+      <div
+        className={`flex ${size} items-center justify-center rounded-xl bg-white/20 ${textSize} font-bold text-white`}
+      >
+        {user?.firstName?.[0]}
+        {user?.lastName?.[0]}
+      </div>
+    );
+
   return (
     <>
       {/* Mobile Toggle Button */}
@@ -59,12 +77,12 @@ const OwnerSidebar = () => {
           className="flex w-full items-center justify-between rounded-2xl bg-white p-4 shadow-sm"
         >
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 text-white">
-              <span className="text-lg">🚗</span>
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 overflow-hidden">
+              <ProfileAvatar size="h-10 w-10" textSize="text-sm" />
             </div>
             <div>
               <p className="text-sm font-bold text-slate-800">
-                Owner Dashboard
+                {user?.firstName || "Owner"} Dashboard
               </p>
               <p className="text-xs text-slate-500">Manage your fleet</p>
             </div>
@@ -84,11 +102,13 @@ const OwnerSidebar = () => {
         {/* Header */}
         <div className="mb-6 hidden lg:block">
           <div className="flex items-center gap-3 rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 p-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 text-2xl">
-              🚗
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 overflow-hidden">
+              <ProfileAvatar size="h-12 w-12" textSize="text-lg" />
             </div>
             <div>
-              <p className="font-bold text-white">Owner Dashboard</p>
+              <p className="font-bold text-white">
+                {user?.firstName || "Owner"}
+              </p>
               <p className="text-xs text-sky-100">Manage your fleet</p>
             </div>
           </div>
