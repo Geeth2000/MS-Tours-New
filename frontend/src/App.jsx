@@ -10,7 +10,6 @@ import Tours from "./pages/Tours.jsx";
 import TourDetails from "./pages/TourDetails.jsx";
 import Vehicles from "./pages/Vehicles.jsx";
 import Packages from "./pages/Packages.jsx";
-import AiAssistant from "./pages/AiAssistant.jsx";
 import About from "./pages/About.jsx";
 import Contact from "./pages/Contact.jsx";
 import Login from "./pages/Login.jsx";
@@ -85,7 +84,6 @@ const App = () => (
           <Route path="tours/:slug" element={<TourDetails />} />
           <Route path="vehicles" element={<Vehicles />} />
           <Route path="packages" element={<Packages />} />
-          <Route path="ai-assistant" element={<AiAssistant />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
           <Route path="awaiting-approval" element={<AwaitingApproval />} />

@@ -7,7 +7,6 @@ import PackageCard from "../components/PackageCard.jsx";
 import { fetchTours } from "../services/tourService.js";
 import { fetchVehicles } from "../services/vehicleService.js";
 import { fetchPackages } from "../services/packageService.js";
-import { getPlaceRecommendations } from "../services/aiService.js";
 import { handleApiError } from "../services/apiClient.js";
 
 const features = [
@@ -37,15 +36,6 @@ const features = [
     link: "/packages",
     gradient: "from-purple-500 to-pink-500",
     bgColor: "bg-purple-50",
-  },
-  {
-    icon: "✨",
-    title: "AI Assistant",
-    subtitle: "Personalized planning",
-    description: "Get recommendations tailored to you",
-    link: "/ai-assistant",
-    gradient: "from-amber-500 to-orange-500",
-    bgColor: "bg-amber-50",
   },
 ];
 
@@ -81,7 +71,6 @@ const Home = () => {
     tours: [],
     vehicles: [],
     packages: [],
-    places: [],
     loading: true,
     error: null,
   });
@@ -89,14 +78,10 @@ const Home = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [tourRes, vehicleRes, packageRes, placeRes] = await Promise.all([
+        const [tourRes, vehicleRes, packageRes] = await Promise.all([
           fetchTours({ limit: 3, isFeatured: true }),
           fetchVehicles({ limit: 3 }),
           fetchPackages({ limit: 3, status: "published" }),
-          getPlaceRecommendations({
-            interests: ["nature", "culture"],
-            durationDays: 3,
-          }),
         ]);
 
         setState((prev) => ({
@@ -104,7 +89,6 @@ const Home = () => {
           tours: tourRes.data || [],
           vehicles: vehicleRes.data || [],
           packages: packageRes.data || [],
-          places: placeRes || [],
           loading: false,
         }));
       } catch (error) {
@@ -134,7 +118,7 @@ const Home = () => {
 
       {/* Features Grid */}
       <section className="relative -mt-20 z-30 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => (
             <Link
               key={feature.title}
@@ -223,91 +207,6 @@ const Home = () => {
           </div>
         </section>
       </div>
-
-      {/* AI Recommendations */}
-      <section className="relative w-full overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-24 text-white">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
-          <div className="absolute -left-32 top-0 h-96 w-96 rounded-full bg-sky-500/20 blur-3xl" />
-          <div className="absolute -right-32 bottom-0 h-80 w-80 rounded-full bg-blue-500/20 blur-3xl" />
-          <div className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-500/10 blur-3xl" />
-        </div>
-
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 text-center">
-            <span className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-sky-400 backdrop-blur-md">
-              <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-              Powered by AI
-            </span>
-            <h2 className="text-4xl font-bold md:text-5xl">
-              Smart Travel Recommendations
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-lg text-slate-400">
-              Not sure where to go? Let our AI suggest the perfect destinations
-              based on your interests.
-            </p>
-          </div>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            {state.places.slice(0, 2).map((place, index) => (
-              <div
-                key={index}
-                className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm transition-all duration-300 hover:border-sky-500/30 hover:bg-white/10"
-              >
-                <div className="absolute -right-20 -top-20 h-40 w-40 rounded-full bg-gradient-to-br from-sky-500/20 to-blue-500/20 blur-3xl transition-all duration-500 group-hover:scale-150" />
-                <div className="relative">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="text-2xl font-bold text-white">
-                        {place.name}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-400">
-                        {place.duration}-day trip • {place.budgetLevel} Budget
-                      </p>
-                    </div>
-                    <span className="shrink-0 rounded-xl bg-gradient-to-r from-sky-500 to-blue-500 px-4 py-1.5 text-xs font-bold text-white shadow-lg">
-                      {place.category}
-                    </span>
-                  </div>
-                  <div className="mt-6 flex flex-wrap gap-2">
-                    {place.highlights.map((highlight) => (
-                      <span
-                        key={highlight}
-                        className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-medium text-slate-300 transition-colors hover:bg-white/20"
-                      >
-                        {highlight}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-12 text-center">
-            <Link
-              to="/ai-assistant"
-              className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-500 px-8 py-4 font-bold text-white shadow-xl shadow-sky-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
-            >
-              <span>Try AI Assistant</span>
-              <svg
-                className="h-5 w-5 transition-transform group-hover:translate-x-1"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M13 7l5 5m0 0l-5 5m5-5H6"
-                />
-              </svg>
-            </Link>
-          </div>
-        </div>
-      </section>
 
       {/* Packages */}
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-20 px-4 py-20 sm:px-6 lg:px-8">

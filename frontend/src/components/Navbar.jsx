@@ -9,7 +9,6 @@ const navLinks = [
   { to: "/plan-trip", label: "Plan Trip" },
   { to: "/vehicles", label: "Vehicles" },
   { to: "/packages", label: "Packages" },
-  { to: "/ai-assistant", label: "AI Assistant" },
 ];
 
 const roleDashboards = {

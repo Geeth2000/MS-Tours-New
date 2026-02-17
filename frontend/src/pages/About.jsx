@@ -30,7 +30,7 @@ const values = [
     icon: "✨",
     title: "Personalized Journeys",
     description:
-      "AI-powered recommendations tailored to your interests, budget, and travel style.",
+      "Curated recommendations tailored to your interests, budget, and travel style.",
   },
 ];
 

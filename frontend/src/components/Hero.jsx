@@ -68,9 +68,8 @@ const Hero = () => {
 
         {/* Subheadline */}
         <p className="mx-auto mt-8 max-w-2xl text-lg leading-relaxed text-slate-200/90 md:text-xl">
-          Hand-crafted tours, verified local guides, and AI-powered
-          recommendations. Experience the Pearl of the Indian Ocean like never
-          before.
+          Hand-crafted tours, verified local guides, and premium vehicles.
+          Experience the Pearl of the Indian Ocean like never before.
         </p>
 
         {/* CTA Buttons */}

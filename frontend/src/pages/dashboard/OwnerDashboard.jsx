@@ -591,15 +591,6 @@ const OwnerDashboard = () => {
                 ))}
               </div>
             </div>
-
-            <div className="rounded-3xl bg-gradient-to-br from-sky-500 to-blue-600 p-8 text-white shadow-lg">
-              <div className="mb-4 text-3xl">✨</div>
-              <h3 className="text-xl font-bold">AI Assistant</h3>
-              <p className="mt-2 text-sky-100 opacity-90">
-                "Tourists are looking for <strong>Ella</strong> trips. Consider
-                adding a van package!"
-              </p>
-            </div>
           </div>
         )}
 
