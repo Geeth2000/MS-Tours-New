@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { ConfirmProvider } from "./components/ConfirmModal.jsx";
+import ScrollToTop from "./components/ScrollToTop.jsx";
 import PublicLayout from "./layouts/PublicLayout.jsx";
 import AuthLayout from "./layouts/AuthLayout.jsx";
 import DashboardLayout from "./layouts/DashboardLayout.jsx";
@@ -9,6 +10,7 @@ import Home from "./pages/Home.jsx";
 import Tours from "./pages/Tours.jsx";
 import TourDetails from "./pages/TourDetails.jsx";
 import Vehicles from "./pages/Vehicles.jsx";
+import VehicleDetails from "./pages/VehicleDetails.jsx";
 import Packages from "./pages/Packages.jsx";
 import About from "./pages/About.jsx";
 import Contact from "./pages/Contact.jsx";
@@ -52,6 +54,7 @@ const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const App = () => (
   <GoogleOAuthProvider clientId={clientId}>
     <ConfirmProvider>
+      <ScrollToTop />
       <Toaster
         position="top-right"
         toastOptions={{
@@ -83,6 +86,7 @@ const App = () => (
           <Route path="tours" element={<Tours />} />
           <Route path="tours/:slug" element={<TourDetails />} />
           <Route path="vehicles" element={<Vehicles />} />
+          <Route path="vehicles/:id" element={<VehicleDetails />} />
           <Route path="packages" element={<Packages />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />

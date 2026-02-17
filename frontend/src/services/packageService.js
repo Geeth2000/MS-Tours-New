@@ -10,6 +10,13 @@ export const fetchPackageById = async (id) => {
   return data.data;
 };
 
+export const fetchPackagesByOwner = async (ownerId) => {
+  const { data } = await apiClient.get("/packages", {
+    params: { owner: ownerId, status: "published" },
+  });
+  return data;
+};
+
 export const fetchMyPackages = async () => {
   const { data } = await apiClient.get("/packages/me");
   return data.data;

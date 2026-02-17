@@ -1,8 +1,9 @@
 import { useState, memo } from "react";
+import { Link } from "react-router-dom";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 
 // 1. Use 'memo' to prevent unnecessary re-renders in large lists
-const VehicleCard = memo(({ vehicle, onSelect, onViewDetails }) => {
+const VehicleCard = memo(({ vehicle, onSelect }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Safety check: Ensure images is always an array
@@ -13,19 +14,21 @@ const VehicleCard = memo(({ vehicle, onSelect, onViewDetails }) => {
   // Handler: Next Image
   const nextImage = (e) => {
     e.stopPropagation();
+    e.preventDefault();
     setCurrentImageIndex((prev) => (prev === imageCount - 1 ? 0 : prev + 1));
   };
 
   // Handler: Previous Image
   const prevImage = (e) => {
     e.stopPropagation();
+    e.preventDefault();
     setCurrentImageIndex((prev) => (prev === 0 ? imageCount - 1 : prev - 1));
   };
 
   return (
-    <article
-      className="group overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition hover:border-sky-100 hover:shadow-lg cursor-pointer"
-      onClick={() => onViewDetails?.(vehicle)}
+    <Link
+      to={`/vehicles/${vehicle._id}`}
+      className="group block overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition hover:border-sky-100 hover:shadow-lg"
     >
       {/* 2. Image Section: Used aspect-ratio for efficient layout */}
       <div className="relative aspect-[4/3] w-full bg-slate-200 group/image">
@@ -120,6 +123,7 @@ const VehicleCard = memo(({ vehicle, onSelect, onViewDetails }) => {
             className="mt-4 w-full rounded-xl bg-sky-500 py-2.5 text-sm font-bold text-white transition-all hover:bg-sky-600 hover:shadow-md active:scale-[0.98]"
             onClick={(e) => {
               e.stopPropagation();
+              e.preventDefault();
               onSelect(vehicle);
             }}
           >
@@ -127,7 +131,7 @@ const VehicleCard = memo(({ vehicle, onSelect, onViewDetails }) => {
           </button>
         )}
       </div>
-    </article>
+    </Link>
   );
 });
 

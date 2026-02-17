@@ -10,6 +10,13 @@ export const fetchVehicleById = async (id) => {
   return data.data;
 };
 
+export const fetchVehiclesByOwner = async (ownerId) => {
+  const { data } = await apiClient.get("/vehicles", {
+    params: { owner: ownerId },
+  });
+  return data;
+};
+
 export const fetchMyVehicles = async () => {
   const { data } = await apiClient.get("/vehicles/me");
   return data.data;

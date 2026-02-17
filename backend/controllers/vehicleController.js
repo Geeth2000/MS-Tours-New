@@ -32,6 +32,7 @@ export const getVehicles = asyncHandler(async (req, res) => {
     seats,
     city,
     district,
+    owner,
     page = 1,
     limit = 12,
   } = req.query;
@@ -39,6 +40,7 @@ export const getVehicles = asyncHandler(async (req, res) => {
   const query = { status: "active" };
 
   if (type) query.type = type;
+  if (owner) query.owner = owner;
   if (city) query["location.city"] = city;
   if (district) query["location.district"] = district;
   if (minPrice || maxPrice) {
@@ -69,14 +71,14 @@ export const getVehicles = asyncHandler(async (req, res) => {
         limit: Number(limit),
         totalPages: Math.ceil(total / Number(limit || 1)),
       },
-    })
+    }),
   );
 });
 
 export const getVehicleById = asyncHandler(async (req, res) => {
   const vehicle = await Vehicle.findById(req.params.id).populate({
     path: "owner",
-    select: "firstName lastName email onboarding",
+    select: "firstName lastName email phone profileImage",
   });
   if (!vehicle) {
     throw new ApiError(StatusCodes.NOT_FOUND, "Vehicle not found");
@@ -85,7 +87,9 @@ export const getVehicleById = asyncHandler(async (req, res) => {
 });
 
 export const getMyVehicles = asyncHandler(async (req, res) => {
-  const vehicles = await Vehicle.find({ owner: req.user._id }).sort({ createdAt: -1 });
+  const vehicles = await Vehicle.find({ owner: req.user._id }).sort({
+    createdAt: -1,
+  });
   return res.status(StatusCodes.OK).json(apiResponse({ data: vehicles }));
 });
 
