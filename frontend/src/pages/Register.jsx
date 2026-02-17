@@ -84,8 +84,9 @@ const Register = () => {
       const response = await registerUser(payload);
       setAuth(response);
 
+      // Navigate to appropriate dashboard based on role
       if (response.user.role === USER_ROLES.VEHICLE_OWNER) {
-        navigate("/awaiting-approval", { replace: true });
+        navigate("/owner/dashboard", { replace: true });
       } else {
         navigate("/dashboard", { replace: true });
       }

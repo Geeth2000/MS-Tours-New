@@ -27,7 +27,7 @@ const buildAuthResponse = (user) => {
 };
 
 export const register = asyncHandler(async (req, res) => {
-  const { email, role } = req.body;
+  const { email } = req.body;
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
@@ -35,12 +35,6 @@ export const register = asyncHandler(async (req, res) => {
   }
 
   const user = await User.create(req.body);
-
-  if (role === USER_ROLES.VEHICLE_OWNER) {
-    user.onboarding.isApproved = false;
-    user.onboarding.approvalStatus = "pending";
-    await user.save();
-  }
 
   return res.status(StatusCodes.CREATED).json(buildAuthResponse(user));
 });
@@ -63,13 +57,6 @@ export const login = asyncHandler(async (req, res) => {
 
   user.lastLoginAt = new Date();
   await user.save();
-
-  if (user.role === USER_ROLES.VEHICLE_OWNER && !user.onboarding.isApproved) {
-    throw new ApiError(
-      StatusCodes.FORBIDDEN,
-      `Account pending approval. Status: ${user.onboarding.approvalStatus}`,
-    );
-  }
 
   return res.status(StatusCodes.OK).json(buildAuthResponse(user));
 });

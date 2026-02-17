@@ -76,18 +76,12 @@ const userSchema = new mongoose.Schema(
     onboarding: {
       isApproved: {
         type: Boolean,
-        default: function defaultApproval() {
-          return this.role !== USER_ROLES.VEHICLE_OWNER;
-        },
+        default: true,
       },
       approvalStatus: {
         type: String,
         enum: ["pending", "approved", "rejected"],
-        default: function defaultStatus() {
-          return this.role === USER_ROLES.VEHICLE_OWNER
-            ? "pending"
-            : "approved";
-        },
+        default: "approved",
       },
       rejectionReason: String,
       documents: {
