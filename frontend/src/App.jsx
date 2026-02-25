@@ -12,6 +12,7 @@ import TourDetails from "./pages/TourDetails.jsx";
 import Vehicles from "./pages/Vehicles.jsx";
 import VehicleDetails from "./pages/VehicleDetails.jsx";
 import Packages from "./pages/Packages.jsx";
+import PackageDetails from "./pages/PackageDetails.jsx";
 import About from "./pages/About.jsx";
 import Contact from "./pages/Contact.jsx";
 import Login from "./pages/Login.jsx";
@@ -86,6 +87,7 @@ const App = () => (
           <Route path="vehicles" element={<Vehicles />} />
           <Route path="vehicles/:id" element={<VehicleDetails />} />
           <Route path="packages" element={<Packages />} />
+          <Route path="packages/:id" element={<PackageDetails />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
           <Route path="awaiting-approval" element={<AwaitingApproval />} />

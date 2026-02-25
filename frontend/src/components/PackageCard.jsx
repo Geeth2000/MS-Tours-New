@@ -1,7 +1,13 @@
+import { Link } from "react-router-dom";
+import StarRating from "./StarRating.jsx";
+
 const PackageCard = ({ pkg, onSelect }) => (
   <article className="group overflow-hidden rounded-2xl bg-white shadow-lg hover:shadow-xl transition-all duration-300">
     {/* Image Section */}
-    <div className="relative h-48 overflow-hidden bg-gradient-to-br from-sky-100 to-blue-50">
+    <Link
+      to={`/packages/${pkg._id}`}
+      className="block relative h-48 overflow-hidden bg-gradient-to-br from-sky-100 to-blue-50"
+    >
       {pkg.images && pkg.images.length > 0 ? (
         <img
           src={pkg.images[0]}
@@ -50,14 +56,28 @@ const PackageCard = ({ pkg, onSelect }) => (
           {pkg.images.length}
         </div>
       )}
-    </div>
+    </Link>
 
     {/* Content Section */}
     <div className="flex flex-col gap-4 p-5">
       <div>
-        <h3 className="text-lg font-bold text-slate-800 group-hover:text-sky-600 transition-colors line-clamp-1">
-          {pkg.title}
-        </h3>
+        <Link to={`/packages/${pkg._id}`}>
+          <h3 className="text-lg font-bold text-slate-800 group-hover:text-sky-600 transition-colors line-clamp-1">
+            {pkg.title}
+          </h3>
+        </Link>
+        {pkg.ratings?.count > 0 && (
+          <div className="mt-1 flex items-center gap-2">
+            <StarRating
+              rating={Math.round(pkg.ratings.average)}
+              readonly
+              size="sm"
+            />
+            <span className="text-xs text-slate-500">
+              {pkg.ratings.average.toFixed(1)} ({pkg.ratings.count})
+            </span>
+          </div>
+        )}
         <p className="mt-1.5 text-sm text-slate-500 line-clamp-2">
           {pkg.description}
         </p>

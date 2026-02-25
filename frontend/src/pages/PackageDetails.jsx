@@ -1,43 +1,30 @@
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
-import { fetchVehicleById } from "../services/vehicleService.js";
-import { fetchPackagesByOwner } from "../services/packageService.js";
+import { fetchPackageById } from "../services/packageService.js";
 import { handleApiError } from "../services/apiClient.js";
 import BookingModal from "../components/BookingModal.jsx";
-import PackageCard from "../components/PackageCard.jsx";
 import ReviewSection from "../components/ReviewSection.jsx";
 import StarRating from "../components/StarRating.jsx";
 import { useAuthStore } from "../hooks/useAuthStore.js";
 import toast from "react-hot-toast";
 
-const VehicleDetails = () => {
+const PackageDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const [vehicle, setVehicle] = useState(null);
-  const [packages, setPackages] = useState([]);
+  const [pkg, setPkg] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
-  const [selectedPackage, setSelectedPackage] = useState(null);
-  const [bookingType, setBookingType] = useState("vehicle"); // "vehicle" or "package"
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const vehicleData = await fetchVehicleById(id);
-        setVehicle(vehicleData);
-
-        // Fetch packages by the same owner
-        if (vehicleData.owner?._id) {
-          const packagesData = await fetchPackagesByOwner(
-            vehicleData.owner._id,
-          );
-          setPackages(packagesData.data || []);
-        }
+        const packageData = await fetchPackageById(id);
+        setPkg(packageData);
       } catch (err) {
         setError(handleApiError(err));
       } finally {
@@ -47,7 +34,7 @@ const VehicleDetails = () => {
     load();
   }, [id]);
 
-  const images = vehicle?.images || [];
+  const images = pkg?.images || [];
   const imageCount = images.length;
   const hasMultipleImages = imageCount > 1;
 
@@ -59,33 +46,13 @@ const VehicleDetails = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? imageCount - 1 : prev - 1));
   };
 
-  // Handle booking with auth check
-  const handleBookVehicle = () => {
-    if (!user) {
-      toast.error("Please login to book this vehicle");
-      navigate("/login", { state: { from: `/vehicles/${id}` } });
-      return;
-    }
-    setBookingType("vehicle");
-    setSelectedPackage(null);
-    setIsBookingOpen(true);
-  };
-
-  const handleBookPackage = (pkg) => {
+  const handleBookPackage = () => {
     if (!user) {
       toast.error("Please login to book this package");
-      navigate("/login", { state: { from: `/vehicles/${id}` } });
+      navigate("/login", { state: { from: `/packages/${id}` } });
       return;
     }
-    setBookingType("package");
-    setSelectedPackage(pkg);
     setIsBookingOpen(true);
-  };
-
-  const handleCloseBooking = () => {
-    setIsBookingOpen(false);
-    setSelectedPackage(null);
-    setBookingType("vehicle");
   };
 
   if (loading) {
@@ -96,7 +63,7 @@ const VehicleDetails = () => {
             <div className="flex flex-col items-center gap-4">
               <div className="h-12 w-12 animate-spin rounded-full border-4 border-sky-200 border-t-sky-600" />
               <p className="text-sm text-slate-500">
-                Loading vehicle details...
+                Loading package details...
               </p>
             </div>
           </div>
@@ -112,10 +79,10 @@ const VehicleDetails = () => {
           <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
             <p className="text-red-600">{error}</p>
             <Link
-              to="/vehicles"
+              to="/packages"
               className="mt-4 inline-block rounded-xl bg-sky-500 px-6 py-2 text-sm font-bold text-white hover:bg-sky-600"
             >
-              Back to Vehicles
+              Back to Packages
             </Link>
           </div>
         </div>
@@ -123,18 +90,22 @@ const VehicleDetails = () => {
     );
   }
 
-  const owner = vehicle?.owner;
+  const owner = pkg?.owner;
+  const packageTypeLabels = {
+    dayTrip: "Day Trip",
+    multiDay: "Multi-Day Tour",
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-sky-50">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Back Button */}
         <Link
-          to="/vehicles"
+          to="/packages"
           className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-sky-600 transition"
         >
           <ChevronLeftIcon className="h-4 w-4" />
-          Back to Vehicles
+          Back to Packages
         </Link>
 
         <div className="flex flex-col gap-8">
@@ -148,7 +119,7 @@ const VehicleDetails = () => {
                   <>
                     <img
                       src={images[currentImageIndex]}
-                      alt={`${vehicle.title} - View ${currentImageIndex + 1}`}
+                      alt={`${pkg.title} - View ${currentImageIndex + 1}`}
                       className="h-full w-full object-cover"
                     />
 
@@ -192,128 +163,121 @@ const VehicleDetails = () => {
                   </>
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
-                    <span className="text-8xl text-slate-300">🚗</span>
+                    <span className="text-8xl text-slate-300">🎒</span>
                   </div>
                 )}
 
                 {/* Type Badge */}
                 <div className="absolute top-4 left-4 rounded-full bg-white/90 px-4 py-2 text-sm font-bold uppercase tracking-wide text-slate-700 shadow-lg backdrop-blur-sm">
-                  {vehicle.type}
+                  {packageTypeLabels[pkg.packageType] || pkg.packageType}
                 </div>
               </div>
 
-              {/* Vehicle Info Card */}
+              {/* Package Info Card */}
               <div className="rounded-3xl bg-white p-6 shadow-lg sm:p-8">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <h1 className="text-2xl font-bold text-slate-800 sm:text-3xl">
-                    {vehicle.title}
+                    {pkg.title}
                   </h1>
-                  {vehicle.ratings?.count > 0 && (
+                  {pkg.ratings?.count > 0 && (
                     <div className="flex items-center gap-2">
                       <StarRating
-                        rating={Math.round(vehicle.ratings.average)}
+                        rating={Math.round(pkg.ratings.average)}
                         readonly
                         size="sm"
                       />
                       <span className="text-sm font-semibold text-slate-600">
-                        {vehicle.ratings.average.toFixed(1)} (
-                        {vehicle.ratings.count})
+                        {pkg.ratings.average.toFixed(1)} ({pkg.ratings.count})
                       </span>
                     </div>
                   )}
                 </div>
                 <p className="mt-3 text-slate-600 leading-relaxed">
-                  {vehicle.description ||
-                    "A reliable vehicle with professional driver service for comfortable travel across Sri Lanka."}
+                  {pkg.description}
                 </p>
 
                 {/* Stats Grid */}
-                <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
                   <div className="rounded-2xl bg-sky-50 p-4 text-center">
                     <p className="text-xs font-bold uppercase text-sky-600">
-                      Type
+                      Duration
                     </p>
-                    <p className="mt-1 text-lg font-bold text-slate-800 capitalize">
-                      {vehicle.type}
+                    <p className="mt-1 text-lg font-bold text-slate-800">
+                      {pkg.durationDays} Day{pkg.durationDays > 1 ? "s" : ""}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-emerald-50 p-4 text-center">
                     <p className="text-xs font-bold uppercase text-emerald-600">
-                      Capacity
+                      Type
                     </p>
-                    <p className="mt-1 text-lg font-bold text-slate-800">
-                      {vehicle.seatingCapacity} Seats
+                    <p className="mt-1 text-lg font-bold text-slate-800 capitalize">
+                      {packageTypeLabels[pkg.packageType] || pkg.packageType}
                     </p>
                   </div>
                   <div className="rounded-2xl bg-purple-50 p-4 text-center">
                     <p className="text-xs font-bold uppercase text-purple-600">
-                      Transmission
+                      Locations
                     </p>
-                    <p className="mt-1 text-lg font-bold text-slate-800 capitalize">
-                      {vehicle.transmission || "Auto"}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-amber-50 p-4 text-center">
-                    <p className="text-xs font-bold uppercase text-amber-600">
-                      Fuel
-                    </p>
-                    <p className="mt-1 text-lg font-bold text-slate-800 capitalize">
-                      {vehicle.fuelType || "Petrol"}
+                    <p className="mt-1 text-lg font-bold text-slate-800">
+                      {pkg.locations?.length || 0}
                     </p>
                   </div>
                 </div>
 
-                {/* Features */}
-                {vehicle.features && vehicle.features.length > 0 && (
+                {/* Locations */}
+                {pkg.locations && pkg.locations.length > 0 && (
                   <div className="mt-6">
                     <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                      Features
+                      Destinations
                     </h3>
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {vehicle.features.map((feature, idx) => (
+                      {pkg.locations.map((location, idx) => (
                         <span
                           key={idx}
-                          className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700"
+                          className="rounded-full bg-sky-100 px-4 py-2 text-sm font-medium text-sky-700"
                         >
-                          {feature}
+                          📍 {location}
                         </span>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Vehicle Details */}
-                {(vehicle.make || vehicle.model || vehicle.year) && (
-                  <div className="mt-6 rounded-2xl bg-slate-50 p-4">
+                {/* Includes */}
+                {pkg.includes && pkg.includes.length > 0 && (
+                  <div className="mt-6">
                     <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-                      Vehicle Details
+                      What's Included
                     </h3>
-                    <div className="mt-3 grid grid-cols-3 gap-4 text-sm">
-                      {vehicle.make && (
-                        <div>
-                          <p className="text-slate-500">Make</p>
-                          <p className="font-semibold text-slate-800">
-                            {vehicle.make}
-                          </p>
-                        </div>
-                      )}
-                      {vehicle.model && (
-                        <div>
-                          <p className="text-slate-500">Model</p>
-                          <p className="font-semibold text-slate-800">
-                            {vehicle.model}
-                          </p>
-                        </div>
-                      )}
-                      {vehicle.year && (
-                        <div>
-                          <p className="text-slate-500">Year</p>
-                          <p className="font-semibold text-slate-800">
-                            {vehicle.year}
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {pkg.includes.map((item, idx) => (
+                        <li
+                          key={idx}
+                          className="flex items-center gap-2 text-sm text-slate-600"
+                        >
+                          <span className="text-emerald-500">✓</span> {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Excludes */}
+                {pkg.excludes && pkg.excludes.length > 0 && (
+                  <div className="mt-6">
+                    <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+                      Not Included
+                    </h3>
+                    <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {pkg.excludes.map((item, idx) => (
+                        <li
+                          key={idx}
+                          className="flex items-center gap-2 text-sm text-slate-500"
+                        >
+                          <span className="text-red-400">✕</span> {item}
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
               </div>
@@ -321,58 +285,45 @@ const VehicleDetails = () => {
 
             {/* Right Column - Price & Owner Info */}
             <div className="space-y-6">
-              {/* Price Card */}
               <div className="sticky top-24 space-y-6">
+                {/* Price Card */}
                 <div className="rounded-3xl bg-white p-6 shadow-lg">
-                  <div className="text-center">
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
-                      Price Per Day
-                    </p>
-                    <p className="mt-2 text-4xl font-bold text-sky-600">
-                      LKR {vehicle.pricePerDay?.toLocaleString()}
-                    </p>
+                  <div className="text-center space-y-2">
+                    {pkg.pricePerPerson && (
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                          Price Per Person
+                        </p>
+                        <p className="mt-1 text-3xl font-bold text-sky-600">
+                          LKR {pkg.pricePerPerson?.toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                    {pkg.pricePerGroup && (
+                      <div className="pt-2 border-t border-slate-100">
+                        <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                          Group Price
+                        </p>
+                        <p className="mt-1 text-2xl font-bold text-emerald-600">
+                          LKR {pkg.pricePerGroup?.toLocaleString()}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <button
-                    onClick={handleBookVehicle}
+                    onClick={handleBookPackage}
                     className="mt-6 w-full rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 py-4 text-lg font-bold text-white shadow-lg shadow-sky-500/30 transition hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
                   >
-                    Book This Vehicle
+                    Book This Package
                   </button>
-
-                  {vehicle.location && (
-                    <div className="mt-4 flex items-center justify-center gap-2 text-sm text-slate-500">
-                      <svg
-                        className="h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
-                      <span>
-                        {vehicle.location.city}, {vehicle.location.district}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Owner Info Card */}
                 {owner && (
                   <div className="rounded-3xl bg-white p-6 shadow-lg">
                     <h3 className="text-sm font-bold uppercase tracking-wide text-slate-500 mb-4">
-                      Vehicle Owner
+                      Package Provider
                     </h3>
 
                     <div className="flex items-center gap-4">
@@ -392,9 +343,7 @@ const VehicleDetails = () => {
                         <p className="text-lg font-bold text-slate-800">
                           {owner.firstName} {owner.lastName}
                         </p>
-                        <p className="text-sm text-slate-500">
-                          Vehicle Partner
-                        </p>
+                        <p className="text-sm text-slate-500">Travel Partner</p>
                       </div>
                     </div>
 
@@ -463,50 +412,24 @@ const VehicleDetails = () => {
             </div>
           </div>
 
-          {/* Owner's Packages Section */}
-          {packages.length > 0 && (
-            <section className="mt-8">
-              <div className="mb-6">
-                <h2 className="text-2xl font-bold text-slate-800">
-                  Packages by {owner?.firstName}
-                </h2>
-                <p className="mt-2 text-slate-500">
-                  Explore travel packages offered by this vehicle owner
-                </p>
-              </div>
-
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {packages.map((pkg) => (
-                  <PackageCard
-                    key={pkg._id}
-                    pkg={pkg}
-                    onSelect={handleBookPackage}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
           {/* Reviews Section */}
-          <div className="mt-8">
-            <ReviewSection
-              itemId={id}
-              itemType="vehicle"
-              ratings={vehicle?.ratings}
-            />
-          </div>
+          <ReviewSection
+            itemId={id}
+            itemType="package"
+            ratings={pkg?.ratings}
+          />
         </div>
       </div>
 
       {/* Booking Modal */}
       <BookingModal
         isOpen={isBookingOpen}
-        onClose={handleCloseBooking}
-        item={bookingType === "package" ? selectedPackage : vehicle}
-        type={bookingType}
+        onClose={() => setIsBookingOpen(false)}
+        item={pkg}
+        type="package"
       />
     </div>
   );
 };
 
-export default VehicleDetails;
+export default PackageDetails;

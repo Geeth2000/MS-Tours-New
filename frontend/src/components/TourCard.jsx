@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import StarRating from "./StarRating.jsx";
 
 const TourCard = ({ tour }) => {
   // LOGIC: Check heroImage -> then galleryImages -> then the 'images' field from Atlas -> then fallback
@@ -24,6 +25,18 @@ const TourCard = ({ tour }) => {
       <div className="flex flex-col gap-4 p-6">
         <div>
           <h3 className="text-xl font-bold text-accent">{tour.title}</h3>
+          {tour.ratings?.count > 0 && (
+            <div className="mt-1 flex items-center gap-2">
+              <StarRating
+                rating={Math.round(tour.ratings.average)}
+                readonly
+                size="sm"
+              />
+              <span className="text-xs text-slate-500">
+                {tour.ratings.average.toFixed(1)} ({tour.ratings.count})
+              </span>
+            </div>
+          )}
           <p className="mt-2 line-clamp-2 text-sm text-slate-500">
             {tour.description}
           </p>

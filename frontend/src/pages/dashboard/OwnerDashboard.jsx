@@ -496,8 +496,16 @@ const OwnerDashboard = () => {
   const handleBookingStatus = async (id, status) => {
     try {
       await updateBookingStatus(id, { status });
+      const statusMessages = {
+        confirmed: "Booking confirmed successfully!",
+        cancelled: "Booking cancelled",
+        completed:
+          "Booking marked as completed! Customer can now leave a review.",
+      };
+      toast.success(statusMessages[status] || "Booking status updated");
       await load();
     } catch (err) {
+      toast.error(handleApiError(err));
       setError(handleApiError(err));
     }
   };
@@ -1334,19 +1342,23 @@ const InfoCard = ({ title, value, icon, color }) => (
 
 const BookingRow = ({ booking, onAction }) => {
   const isPending = booking.status === "pending";
+  const isConfirmed = booking.status === "confirmed";
+  const isCompleted = booking.status === "completed";
+  const isCancelled = booking.status === "cancelled";
+
+  const statusConfig = {
+    pending: "bg-amber-100 text-amber-700",
+    confirmed: "bg-emerald-100 text-emerald-700",
+    completed: "bg-sky-100 text-sky-700",
+    cancelled: "bg-rose-100 text-rose-700",
+  };
+
   return (
     <div className="flex flex-col gap-4 rounded-2xl border border-slate-50 bg-slate-50/50 p-5 transition hover:bg-white hover:shadow-sm sm:flex-row sm:items-center sm:justify-between">
       <div>
         <div className="flex items-center gap-2">
           <span
-            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide 
-            ${
-              booking.status === "confirmed"
-                ? "bg-emerald-100 text-emerald-700"
-                : booking.status === "pending"
-                  ? "bg-amber-100 text-amber-700"
-                  : "bg-slate-200 text-slate-600"
-            }`}
+            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${statusConfig[booking.status] || "bg-slate-200 text-slate-600"}`}
           >
             {booking.status}
           </span>
@@ -1370,21 +1382,40 @@ const BookingRow = ({ booking, onAction }) => {
             LKR {booking.ownerEarnings?.toLocaleString()}
           </p>
         </div>
+        {/* Pending: Show Confirm/Cancel buttons */}
         {isPending && (
           <div className="flex gap-2">
             <button
               onClick={() => onAction(booking._id, "confirmed")}
               className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-600"
+              title="Confirm Booking"
             >
-              ✓
+              ✓ Confirm
             </button>
             <button
               onClick={() => onAction(booking._id, "cancelled")}
               className="rounded-xl bg-rose-500 px-3 py-2 text-xs font-bold text-white hover:bg-rose-600"
+              title="Cancel Booking"
             >
               ✕
             </button>
           </div>
+        )}
+        {/* Confirmed: Show Mark Complete button */}
+        {isConfirmed && (
+          <button
+            onClick={() => onAction(booking._id, "completed")}
+            className="rounded-xl bg-sky-500 px-4 py-2 text-xs font-bold text-white hover:bg-sky-600 transition"
+            title="Mark as Completed"
+          >
+            ✓ Mark Complete
+          </button>
+        )}
+        {/* Completed: Show completed indicator */}
+        {isCompleted && (
+          <span className="rounded-xl bg-sky-50 px-4 py-2 text-xs font-bold text-sky-600">
+            ✓ Service Completed
+          </span>
         )}
       </div>
     </div>

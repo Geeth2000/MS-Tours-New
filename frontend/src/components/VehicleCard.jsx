@@ -1,6 +1,7 @@
 import { useState, memo } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import StarRating from "./StarRating.jsx";
 
 // 1. Use 'memo' to prevent unnecessary re-renders in large lists
 const VehicleCard = memo(({ vehicle, onSelect }) => {
@@ -92,6 +93,18 @@ const VehicleCard = memo(({ vehicle, onSelect }) => {
           >
             {vehicle.title}
           </h3>
+          {vehicle.ratings?.count > 0 && (
+            <div className="mt-1 flex items-center gap-2">
+              <StarRating
+                rating={Math.round(vehicle.ratings.average)}
+                readonly
+                size="sm"
+              />
+              <span className="text-xs text-slate-500">
+                {vehicle.ratings.average.toFixed(1)} ({vehicle.ratings.count})
+              </span>
+            </div>
+          )}
           <p className="mt-1 line-clamp-2 text-sm text-slate-500">
             {vehicle.description || "Reliable vehicle with professional driver"}
           </p>

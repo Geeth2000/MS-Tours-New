@@ -9,13 +9,13 @@ export const registerSchema = Joi.object({
   role: Joi.string()
     .valid(...Object.values(USER_ROLES))
     .default(USER_ROLES.TOURIST),
-  phone: Joi.string().trim().optional(),
+  phone: Joi.string().trim().allow("", null).optional(),
   profileImage: Joi.string().allow("", null).optional(),
   onboarding: Joi.object({
     documents: Joi.object({
-      nicNumber: Joi.string().trim().optional(),
-      drivingLicenseNumber: Joi.string().trim().optional(),
-      vehicleRegistrationNumber: Joi.string().trim().optional(),
+      nicNumber: Joi.string().trim().allow("", null).optional(),
+      drivingLicenseNumber: Joi.string().trim().allow("", null).optional(),
+      vehicleRegistrationNumber: Joi.string().trim().allow("", null).optional(),
     }).optional(),
   }).optional(),
 });

@@ -355,6 +355,7 @@ const TabButton = ({ active, onClick, label, count }) => (
 
 const BookingCard = ({ booking, onCancel }) => {
   const isPending = booking.status === "pending";
+  const isCompleted = booking.status === "completed";
 
   // Status Styling
   const statusConfig = {
@@ -364,7 +365,7 @@ const BookingCard = ({ booking, onCancel }) => {
     },
     confirmed: { color: "bg-emerald-100 text-emerald-700", label: "Confirmed" },
     cancelled: { color: "bg-rose-100 text-rose-700", label: "Cancelled" },
-    completed: { color: "bg-slate-100 text-slate-600", label: "Completed" },
+    completed: { color: "bg-sky-100 text-sky-700", label: "Completed" },
   };
 
   const statusStyle = statusConfig[booking.status] || statusConfig.pending;
@@ -376,6 +377,16 @@ const BookingCard = ({ booking, onCancel }) => {
     : booking.vehicle
       ? "Vehicle Rental"
       : "Custom Package";
+
+  // Determine the link for writing a review
+  const getReviewLink = () => {
+    if (booking.vehicle?._id) return `/vehicles/${booking.vehicle._id}`;
+    if (booking.package?._id) return `/packages/${booking.package._id}`;
+    if (booking.tour?._id) return `/tours/${booking.tour._id}`;
+    return null;
+  };
+
+  const reviewLink = getReviewLink();
 
   return (
     <article className="group relative overflow-hidden rounded-3xl border border-slate-100 bg-white p-6 shadow-sm transition hover:border-sky-100 hover:shadow-md">
@@ -433,6 +444,16 @@ const BookingCard = ({ booking, onCancel }) => {
             >
               Cancel Request
             </button>
+          )}
+
+          {/* Write Review button for completed bookings */}
+          {isCompleted && reviewLink && (
+            <Link
+              to={reviewLink}
+              className="rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2 text-xs font-bold text-white shadow-md transition hover:shadow-lg hover:scale-[1.02]"
+            >
+              ✍️ Write Review
+            </Link>
           )}
         </div>
       </div>

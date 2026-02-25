@@ -29,3 +29,22 @@ export const cancelBooking = async (id) => {
   const { data } = await apiClient.post(`/bookings/${id}/cancel`);
   return data.data;
 };
+
+/**
+ * Check if user has a completed booking for a specific item
+ * @param {string} itemId - The ID of the vehicle, package, or tour
+ * @param {string} itemType - Type of item: "vehicle", "package", or "tour"
+ * @returns {Promise<boolean>} - True if user has a completed booking for this item
+ */
+export const hasCompletedBooking = async (itemId, itemType) => {
+  try {
+    const bookings = await fetchMyBookings();
+    return bookings.some(
+      (booking) =>
+        booking.status === "completed" &&
+        (booking[itemType]?._id === itemId || booking[itemType] === itemId),
+    );
+  } catch {
+    return false;
+  }
+};

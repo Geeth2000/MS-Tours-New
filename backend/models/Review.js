@@ -38,11 +38,17 @@ const reviewSchema = new mongoose.Schema(
       respondedAt: Date,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 reviewSchema.index({ tour: 1, createdAt: -1 });
 reviewSchema.index({ vehicle: 1, createdAt: -1 });
+reviewSchema.index({ package: 1, createdAt: -1 });
+
+// Unique indexes to prevent duplicate reviews from same user
+reviewSchema.index({ user: 1, tour: 1 }, { unique: true, sparse: true });
+reviewSchema.index({ user: 1, vehicle: 1 }, { unique: true, sparse: true });
+reviewSchema.index({ user: 1, package: 1 }, { unique: true, sparse: true });
 
 const Review = mongoose.model("Review", reviewSchema);
 
