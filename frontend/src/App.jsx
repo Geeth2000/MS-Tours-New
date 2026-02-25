@@ -45,8 +45,6 @@ const ownerLinks = [
 const adminLinks = [
   { to: "/admin/dashboard", label: "Dashboard" },
   { to: "/admin/add-tour", label: "Add Tour" },
-  { to: "#owners", label: "Vehicle Owners" },
-  { to: "#users", label: "Users" },
 ];
 
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
