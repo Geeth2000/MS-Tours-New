@@ -295,70 +295,99 @@ const Home = () => {
             </div>
           ) : state.reviews.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {state.reviews.map((review) => (
-                <div
-                  key={review._id}
-                  className="rounded-2xl bg-white p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex gap-0.5 text-amber-400">
-                      {Array(5)
-                        .fill(null)
-                        .map((_, i) => (
-                          <svg
-                            key={i}
-                            className={`h-5 w-5 ${i < review.rating ? "text-amber-400" : "text-slate-200"}`}
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
-                    </div>
-                    <span className="text-xs text-slate-400">
-                      {new Date(review.createdAt).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      })}
-                    </span>
-                  </div>
-                  {review.comment && (
-                    <p className="mt-4 text-slate-600 line-clamp-3">
-                      "{review.comment}"
-                    </p>
-                  )}
-                  {(review.vehicle || review.package || review.tour) && (
-                    <p className="mt-2 text-xs font-medium text-sky-600">
-                      {review.vehicle?.title ||
-                        review.package?.title ||
-                        review.tour?.title}
-                    </p>
-                  )}
-                  <div className="mt-4 flex items-center gap-3 border-t border-slate-100 pt-4">
-                    {review.user?.profileImage ? (
-                      <img
-                        src={review.user.profileImage}
-                        alt={`${review.user.firstName} ${review.user.lastName}`}
-                        className="h-10 w-10 rounded-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-blue-600 text-sm font-bold text-white">
-                        {review.user?.firstName?.[0]}
-                        {review.user?.lastName?.[0]}
+              {state.reviews.map((review) => {
+                // Determine review type
+                const reviewType = review.vehicle
+                  ? "Vehicle"
+                  : review.package
+                    ? "Package"
+                    : review.tour
+                      ? "Tour"
+                      : null;
+                const reviewTypeColor = review.vehicle
+                  ? "bg-blue-100 text-blue-700"
+                  : review.package
+                    ? "bg-purple-100 text-purple-700"
+                    : "bg-sky-100 text-sky-700";
+
+                return (
+                  <div
+                    key={review._id}
+                    className="rounded-2xl bg-white p-6 shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-0.5 text-amber-400">
+                        {Array(5)
+                          .fill(null)
+                          .map((_, i) => (
+                            <svg
+                              key={i}
+                              className={`h-5 w-5 ${i < review.rating ? "text-amber-400" : "text-slate-200"}`}
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          ))}
                       </div>
+                      <span className="text-xs text-slate-400">
+                        {new Date(review.createdAt).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          },
+                        )}
+                      </span>
+                    </div>
+                    {review.comment && (
+                      <p className="mt-4 text-slate-600 line-clamp-3">
+                        "{review.comment}"
+                      </p>
                     )}
-                    <div>
-                      <div className="font-semibold text-slate-800">
-                        {review.user?.firstName} {review.user?.lastName}
-                      </div>
-                      <div className="text-xs text-slate-500">
-                        Verified Traveler
+                    {/* Review Type and Item Name */}
+                    <div className="mt-3 flex items-center gap-2">
+                      {reviewType && (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${reviewTypeColor}`}
+                        >
+                          {reviewType}
+                        </span>
+                      )}
+                      {(review.vehicle || review.package || review.tour) && (
+                        <span className="text-xs font-medium text-slate-500 truncate">
+                          {review.vehicle?.title ||
+                            review.package?.title ||
+                            review.tour?.title}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-4 flex items-center gap-3 border-t border-slate-100 pt-4">
+                      {review.user?.profileImage ? (
+                        <img
+                          src={review.user.profileImage}
+                          alt={`${review.user.firstName} ${review.user.lastName}`}
+                          className="h-10 w-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-blue-600 text-sm font-bold text-white">
+                          {review.user?.firstName?.[0]}
+                          {review.user?.lastName?.[0]}
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-semibold text-slate-800">
+                          {review.user?.firstName} {review.user?.lastName}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          Verified Traveler
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center">
