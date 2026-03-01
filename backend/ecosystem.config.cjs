@@ -4,8 +4,8 @@ module.exports = {
       name: "mstours-backend",
       script: "./server.js",
       cwd: "/var/www/mstours/backend",
-      instances: "max",
-      exec_mode: "cluster",
+      instances: 1,
+      exec_mode: "fork",
       env: {
         NODE_ENV: "development",
         PORT: 5000,
