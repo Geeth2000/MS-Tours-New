@@ -64,7 +64,7 @@ const About = () => (
 
       <div className="relative z-10 mx-auto max-w-3xl text-center">
         <span className="mb-4 inline-block rounded-full bg-white/20 px-4 py-1.5 text-sm font-medium backdrop-blur-sm">
-          🌴 Discover Sri Lanka
+          🌴 Discover Sri Lanka...
         </span>
         <h1 className="text-4xl font-bold leading-tight md:text-5xl lg:text-6xl">
           Travel Beyond the Ordinary
