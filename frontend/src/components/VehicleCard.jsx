@@ -125,8 +125,19 @@ const VehicleCard = memo(({ vehicle, onSelect }) => {
               Capacity
             </p>
             <p className="text-sm font-semibold text-slate-700">
-              {vehicle.seatingCapacity} Seats
+              {vehicle.seatCount || vehicle.seatingCapacity} Seats
             </p>
+            {(vehicle.suitcaseCapacity > 0 || vehicle.bagCapacity > 0) && (
+              <p className="text-xs text-slate-500">
+                {vehicle.suitcaseCapacity > 0 &&
+                  `${vehicle.suitcaseCapacity} ${vehicle.suitcaseCapacity === 1 ? "Suitcase" : "Suitcases"}`}
+                {vehicle.suitcaseCapacity > 0 &&
+                  vehicle.bagCapacity > 0 &&
+                  " & "}
+                {vehicle.bagCapacity > 0 &&
+                  `${vehicle.bagCapacity} ${vehicle.bagCapacity === 1 ? "Bag" : "Bags"}`}
+              </p>
+            )}
           </div>
         </div>
 

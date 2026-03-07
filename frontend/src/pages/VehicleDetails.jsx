@@ -242,7 +242,7 @@ const VehicleDetails = () => {
                       Capacity
                     </p>
                     <p className="mt-1 text-lg font-bold text-slate-800">
-                      {vehicle.seatingCapacity} Seats
+                      {vehicle.seatCount || vehicle.seatingCapacity} Seats
                     </p>
                   </div>
                   <div className="rounded-2xl bg-purple-50 p-4 text-center">
@@ -262,6 +262,24 @@ const VehicleDetails = () => {
                     </p>
                   </div>
                 </div>
+
+                {/* Luggage Capacity */}
+                {(vehicle.suitcaseCapacity > 0 || vehicle.bagCapacity > 0) && (
+                  <div className="mt-4 rounded-2xl bg-indigo-50 p-4">
+                    <p className="text-xs font-bold uppercase text-indigo-600 mb-2">
+                      Luggage Capacity
+                    </p>
+                    <p className="text-lg font-bold text-slate-800">
+                      {vehicle.suitcaseCapacity > 0 &&
+                        `${vehicle.suitcaseCapacity} ${vehicle.suitcaseCapacity === 1 ? "Suitcase" : "Suitcases"}`}
+                      {vehicle.suitcaseCapacity > 0 &&
+                        vehicle.bagCapacity > 0 &&
+                        " & "}
+                      {vehicle.bagCapacity > 0 &&
+                        `${vehicle.bagCapacity} ${vehicle.bagCapacity === 1 ? "Bag" : "Bags"}`}
+                    </p>
+                  </div>
+                )}
 
                 {/* Features */}
                 {vehicle.features && vehicle.features.length > 0 && (

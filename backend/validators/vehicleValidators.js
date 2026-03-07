@@ -21,7 +21,9 @@ export const createVehicleSchema = Joi.object({
     .valid("petrol", "diesel", "hybrid", "electric")
     .allow("", null)
     .optional(),
-  seatingCapacity: Joi.number().integer().min(1).required(),
+  seatCount: Joi.number().integer().min(1).max(30).required(),
+  suitcaseCapacity: Joi.number().integer().min(0).max(15).default(0),
+  bagCapacity: Joi.number().integer().min(0).max(20).default(0),
   pricePerDay: Joi.number().min(0).required(),
   features: Joi.array().items(Joi.string().trim()).default([]),
   description: Joi.string().trim().allow("", null),

@@ -55,6 +55,41 @@ const OwnerDashboard = () => {
   const [showMobileForm, setShowMobileForm] = useState(false);
   const [showMobilePackageForm, setShowMobilePackageForm] = useState(false);
 
+  // Vehicle capacity stepper state
+  const [seatCount, setSeatCount] = useState(4);
+  const [suitcaseCapacity, setSuitcaseCapacity] = useState(2);
+  const [bagCapacity, setBagCapacity] = useState(2);
+
+  // Vehicle features selection state
+  const [selectedFeatures, setSelectedFeatures] = useState([]);
+
+  // Predefined vehicle features
+  const VEHICLE_FEATURES = [
+    "Air Conditioning",
+    "GPS Navigation",
+    "WiFi",
+    "Child Seats",
+    "USB Charging Ports",
+    "Bluetooth Audio",
+    "Reclining Seats",
+    "Luggage Carrier",
+    "First Aid Kit",
+    "TV / Entertainment System",
+    "Sunroof",
+    "Leather Seats",
+    "Backup Camera",
+    "Cruise Control",
+    "Heated Seats",
+  ];
+
+  const toggleFeature = (feature) => {
+    setSelectedFeatures((prev) =>
+      prev.includes(feature)
+        ? prev.filter((f) => f !== feature)
+        : [...prev, feature],
+    );
+  };
+
   const vehicleForm = useForm();
   const packageForm = useForm({ defaultValues: PACKAGE_FORM_DEFAULTS });
   const vehicleFormRef = useRef(null);
@@ -116,36 +151,50 @@ const OwnerDashboard = () => {
         imageUrls = await Promise.all(uploadPromises);
       }
 
-      // 2. Process features: convert comma-separated string to array
-      let featuresArray = [];
-      if (formData.features && typeof formData.features === "string") {
-        featuresArray = formData.features
-          .split(",")
-          .map((f) => f.trim())
-          .filter((f) => f.length > 0);
-      }
+      // 2. Prepare payload with the new image URLs and selected features
+      const locationCity = formData["location.city"] || formData.location?.city;
+      const locationDistrict =
+        formData["location.district"] || formData.location?.district;
 
-      // 3. Prepare payload with the new image URLs and processed features
       const payload = {
-        ...formData,
+        title: formData.title,
+        type: formData.type,
+        seatCount: Number(seatCount),
+        suitcaseCapacity: Number(suitcaseCapacity),
+        bagCapacity: Number(bagCapacity),
+        pricePerDay: Number(formData.pricePerDay),
         images: imageUrls,
-        features: featuresArray,
+        features: selectedFeatures,
+        status: formData.status || "active",
       };
 
-      // Clean up empty optional fields
-      if (!payload.make) delete payload.make;
-      if (!payload.model) delete payload.model;
-      if (!payload.year) delete payload.year;
-      if (!payload.transmission) delete payload.transmission;
-      if (!payload.fuelType) delete payload.fuelType;
+      // Add optional fields only if they have values
+      if (formData.description) payload.description = formData.description;
+      if (formData.make) payload.make = formData.make;
+      if (formData.model) payload.model = formData.model;
+      if (formData.year) payload.year = Number(formData.year);
+      if (formData.transmission) payload.transmission = formData.transmission;
+      if (formData.fuelType) payload.fuelType = formData.fuelType;
+      if (locationCity || locationDistrict) {
+        payload.location = {};
+        if (locationCity) payload.location.city = locationCity;
+        if (locationDistrict) payload.location.district = locationDistrict;
+      }
 
-      // 4. Send to backend
+      console.log("Creating vehicle with payload:", payload);
+
+      // Send to backend
       await createVehicle(payload);
 
       // 5. Cleanup
       vehicleForm.reset();
       setSelectedFiles([]); // Clear selected files
       setShowMobileForm(false); // Hide mobile form after creation
+      // Reset capacity values
+      setSeatCount(4);
+      setSuitcaseCapacity(2);
+      setBagCapacity(2);
+      setSelectedFeatures([]); // Reset selected features
       await load();
       toast.success("Vehicle added successfully!");
     } catch (err) {
@@ -257,12 +306,17 @@ const OwnerDashboard = () => {
     setShowMobileForm(true); // Show form on mobile when editing
     setExistingVehicleImages(vehicle.images || []);
     setSelectedFiles([]);
+    // Set capacity stepper values
+    setSeatCount(vehicle.seatCount || vehicle.seatingCapacity || 4);
+    setSuitcaseCapacity(vehicle.suitcaseCapacity || 0);
+    setBagCapacity(vehicle.bagCapacity || 0);
+    // Set selected features
+    setSelectedFeatures(vehicle.features || []);
     // Pre-fill form with vehicle data
     vehicleForm.reset({
       title: vehicle.title,
       description: vehicle.description || "",
       type: vehicle.type,
-      seatingCapacity: vehicle.seatingCapacity,
       make: vehicle.make || "",
       model: vehicle.model || "",
       year: vehicle.year || "",
@@ -271,7 +325,6 @@ const OwnerDashboard = () => {
       pricePerDay: vehicle.pricePerDay,
       "location.city": vehicle.location?.city || "",
       "location.district": vehicle.location?.district || "",
-      features: vehicle.features?.join(", ") || "",
       status: vehicle.status || "active",
     });
 
@@ -309,27 +362,34 @@ const OwnerDashboard = () => {
       // Combine existing (after deletions) with new uploads
       const imageUrls = [...existingVehicleImages, ...newImageUrls];
 
-      // Process features
-      let featuresArray = [];
-      if (formData.features && typeof formData.features === "string") {
-        featuresArray = formData.features
-          .split(",")
-          .map((f) => f.trim())
-          .filter((f) => f.length > 0);
-      }
+      const locationCity = formData["location.city"] || formData.location?.city;
+      const locationDistrict =
+        formData["location.district"] || formData.location?.district;
 
       const payload = {
-        ...formData,
+        title: formData.title,
+        type: formData.type,
+        seatCount: Number(seatCount),
+        suitcaseCapacity: Number(suitcaseCapacity),
+        bagCapacity: Number(bagCapacity),
+        pricePerDay: Number(formData.pricePerDay),
         images: imageUrls,
-        features: featuresArray,
+        features: selectedFeatures,
+        status: formData.status || "active",
       };
 
-      // Clean up empty optional fields
-      if (!payload.make) delete payload.make;
-      if (!payload.model) delete payload.model;
-      if (!payload.year) delete payload.year;
-      if (!payload.transmission) delete payload.transmission;
-      if (!payload.fuelType) delete payload.fuelType;
+      // Add optional fields only if they have values
+      if (formData.description) payload.description = formData.description;
+      if (formData.make) payload.make = formData.make;
+      if (formData.model) payload.model = formData.model;
+      if (formData.year) payload.year = Number(formData.year);
+      if (formData.transmission) payload.transmission = formData.transmission;
+      if (formData.fuelType) payload.fuelType = formData.fuelType;
+      if (locationCity || locationDistrict) {
+        payload.location = {};
+        if (locationCity) payload.location.city = locationCity;
+        if (locationDistrict) payload.location.district = locationDistrict;
+      }
 
       await updateVehicle(editingVehicle._id, payload);
 
@@ -338,6 +398,11 @@ const OwnerDashboard = () => {
       setExistingVehicleImages([]);
       setEditingVehicle(null);
       setShowMobileForm(false); // Hide mobile form after update
+      // Reset capacity values
+      setSeatCount(4);
+      setSuitcaseCapacity(2);
+      setBagCapacity(2);
+      setSelectedFeatures([]); // Reset selected features
       await load();
       toast.success("Vehicle updated successfully!");
     } catch (err) {
@@ -355,6 +420,11 @@ const OwnerDashboard = () => {
     setSelectedFiles([]);
     setExistingVehicleImages([]);
     setShowMobileForm(false); // Hide mobile form on cancel
+    // Reset capacity values
+    setSeatCount(4);
+    setSuitcaseCapacity(2);
+    setBagCapacity(2);
+    setSelectedFeatures([]); // Reset selected features
   };
 
   const handlePackageDelete = async (id) => {
@@ -754,33 +824,183 @@ const OwnerDashboard = () => {
                     {/* Vehicle Specifications */}
                     <div className="rounded-2xl bg-slate-50 p-4 space-y-4">
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                        Specifications
+                        Vehicle Type
                       </p>
-                      <div className="grid grid-cols-2 gap-3">
-                        <SelectGroup
-                          label="Type *"
-                          register={vehicleForm.register("type", {
-                            required: true,
-                          })}
-                          options={[
-                            "car",
-                            "van",
-                            "suv",
-                            "bus",
-                            "jeep",
-                            "tuk",
-                            "other",
-                          ]}
-                        />
-                        <InputGroup
-                          label="Seats *"
-                          type="number"
-                          register={vehicleForm.register("seatingCapacity", {
-                            required: true,
-                            min: 1,
-                          })}
-                        />
+                      <SelectGroup
+                        label="Type *"
+                        register={vehicleForm.register("type", {
+                          required: true,
+                        })}
+                        options={[
+                          "car",
+                          "van",
+                          "suv",
+                          "bus",
+                          "jeep",
+                          "tuk",
+                          "other",
+                        ]}
+                      />
+                    </div>
+
+                    {/* Vehicle Capacity - Modern Stepper UI */}
+                    <div className="rounded-2xl bg-gradient-to-br from-sky-50 to-indigo-50 p-4 space-y-3 border border-sky-100">
+                      <p className="text-xs font-bold uppercase tracking-wider text-sky-700">
+                        🚗 Vehicle Capacity
+                      </p>
+
+                      {/* Seats Stepper */}
+                      <div className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm border border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">👥</span>
+                          <span className="text-sm font-semibold text-slate-700">
+                            Seats
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSeatCount(Math.max(1, seatCount - 1))
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-slate-300 bg-slate-50 text-slate-700 transition hover:bg-sky-100 hover:border-sky-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={seatCount <= 1}
+                          >
+                            <span className="text-base font-bold leading-none">
+                              −
+                            </span>
+                          </button>
+                          <span className="w-8 text-center text-xl font-bold text-slate-800">
+                            {seatCount}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSeatCount(Math.min(30, seatCount + 1))
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-slate-300 bg-slate-50 text-slate-700 transition hover:bg-sky-100 hover:border-sky-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={seatCount >= 30}
+                          >
+                            <span className="text-base font-bold leading-none">
+                              +
+                            </span>
+                          </button>
+                        </div>
                       </div>
+
+                      {/* Suitcases Stepper */}
+                      <div className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm border border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">🧳</span>
+                          <span className="text-sm font-semibold text-slate-700">
+                            Suitcases
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSuitcaseCapacity(
+                                Math.max(0, suitcaseCapacity - 1),
+                              )
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-slate-300 bg-slate-50 text-slate-700 transition hover:bg-sky-100 hover:border-sky-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={suitcaseCapacity <= 0}
+                          >
+                            <span className="text-base font-bold leading-none">
+                              −
+                            </span>
+                          </button>
+                          <span className="w-8 text-center text-xl font-bold text-slate-800">
+                            {suitcaseCapacity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setSuitcaseCapacity(
+                                Math.min(15, suitcaseCapacity + 1),
+                              )
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-slate-300 bg-slate-50 text-slate-700 transition hover:bg-sky-100 hover:border-sky-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={suitcaseCapacity >= 15}
+                          >
+                            <span className="text-base font-bold leading-none">
+                              +
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Bags Stepper */}
+                      <div className="flex items-center justify-between rounded-xl bg-white p-3 shadow-sm border border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xl">👜</span>
+                          <span className="text-sm font-semibold text-slate-700">
+                            Bags
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setBagCapacity(Math.max(0, bagCapacity - 1))
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-slate-300 bg-slate-50 text-slate-700 transition hover:bg-sky-100 hover:border-sky-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={bagCapacity <= 0}
+                          >
+                            <span className="text-base font-bold leading-none">
+                              −
+                            </span>
+                          </button>
+                          <span className="w-8 text-center text-xl font-bold text-slate-800">
+                            {bagCapacity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setBagCapacity(Math.min(20, bagCapacity + 1))
+                            }
+                            className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-slate-300 bg-slate-50 text-slate-700 transition hover:bg-sky-100 hover:border-sky-400 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={bagCapacity >= 20}
+                          >
+                            <span className="text-base font-bold leading-none">
+                              +
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Live Summary */}
+                      <div className="rounded-xl bg-sky-600 p-3 text-center">
+                        <p className="text-sm font-medium text-white">
+                          This vehicle supports{" "}
+                          <span className="font-bold">
+                            {seatCount} passenger{seatCount !== 1 ? "s" : ""}
+                          </span>
+                          {(suitcaseCapacity > 0 || bagCapacity > 0) &&
+                            " with "}
+                          {suitcaseCapacity > 0 && (
+                            <span className="font-bold">
+                              {suitcaseCapacity} suitcase
+                              {suitcaseCapacity !== 1 ? "s" : ""}
+                            </span>
+                          )}
+                          {suitcaseCapacity > 0 && bagCapacity > 0 && " and "}
+                          {bagCapacity > 0 && (
+                            <span className="font-bold">
+                              {bagCapacity} bag{bagCapacity !== 1 ? "s" : ""}
+                            </span>
+                          )}
+                          .
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Vehicle Details */}
+                    <div className="rounded-2xl bg-slate-50 p-4 space-y-4">
+                      <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
+                        Vehicle Details
+                      </p>
                       <div className="grid grid-cols-2 gap-3">
                         <InputGroup
                           label="Make"
@@ -859,19 +1079,45 @@ const OwnerDashboard = () => {
                       </div>
                     </div>
 
-                    {/* Features */}
-                    <div className="rounded-2xl bg-slate-50 p-4 space-y-4">
-                      <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                        Features & Amenities
+                    {/* Features & Amenities - Selectable Tags */}
+                    <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 p-4 space-y-4 border border-emerald-100">
+                      <p className="text-xs font-bold uppercase tracking-wider text-emerald-700">
+                        ✨ Features & Amenities
                       </p>
-                      <TextAreaGroup
-                        label="Features (comma-separated)"
-                        register={vehicleForm.register("features")}
-                        placeholder="e.g., Air Conditioning, GPS, WiFi, Child Seats"
-                      />
                       <p className="text-xs text-slate-500">
-                        Separate each feature with a comma
+                        Select the features available in your vehicle
                       </p>
+                      <div className="flex flex-wrap gap-2">
+                        {VEHICLE_FEATURES.map((feature) => {
+                          const isSelected = selectedFeatures.includes(feature);
+                          return (
+                            <button
+                              key={feature}
+                              type="button"
+                              onClick={() => toggleFeature(feature)}
+                              className={`px-3 py-2 rounded-full text-sm font-medium transition-all duration-200 border-2 ${
+                                isSelected
+                                  ? "bg-emerald-500 text-white border-emerald-500 shadow-md"
+                                  : "bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:bg-emerald-50"
+                              }`}
+                            >
+                              {isSelected && <span className="mr-1">✓</span>}
+                              {feature}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {/* Selected Features Summary */}
+                      {selectedFeatures.length > 0 && (
+                        <div className="rounded-xl bg-emerald-600 p-3">
+                          <p className="text-xs font-bold text-emerald-100 mb-2">
+                            Selected Features ({selectedFeatures.length})
+                          </p>
+                          <p className="text-sm text-white">
+                            {selectedFeatures.join(" • ")}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Status */}
@@ -987,18 +1233,31 @@ const OwnerDashboard = () => {
 
               {/* List */}
               <div className="grid gap-4 sm:grid-cols-2 lg:col-span-8">
-                {vehicles.map((v) => (
-                  <ItemCard
-                    key={v._id}
-                    title={v.title}
-                    subtitle={`${v.type.toUpperCase()} • ${v.seatingCapacity} Seats`}
-                    price={v.pricePerDay}
-                    image={v.images?.[0]}
-                    onDelete={() => handleVehicleDelete(v._id)}
-                    onEdit={() => handleVehicleEdit(v)}
-                    type="vehicle"
-                  />
-                ))}
+                {vehicles.map((v) => {
+                  const luggageInfo = [];
+                  if (v.suitcaseCapacity > 0)
+                    luggageInfo.push(
+                      `${v.suitcaseCapacity} ${v.suitcaseCapacity === 1 ? "SC" : "SC"}`,
+                    );
+                  if (v.bagCapacity > 0)
+                    luggageInfo.push(
+                      `${v.bagCapacity} ${v.bagCapacity === 1 ? "Bag" : "Bags"}`,
+                    );
+                  const seats = v.seatCount || v.seatingCapacity;
+                  const subtitle = `${v.type.toUpperCase()} • ${seats} Seats${luggageInfo.length > 0 ? ` • ${luggageInfo.join(" & ")}` : ""}`;
+                  return (
+                    <ItemCard
+                      key={v._id}
+                      title={v.title}
+                      subtitle={subtitle}
+                      price={v.pricePerDay}
+                      image={v.images?.[0]}
+                      onDelete={() => handleVehicleDelete(v._id)}
+                      onEdit={() => handleVehicleEdit(v)}
+                      type="vehicle"
+                    />
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1169,7 +1428,8 @@ const OwnerDashboard = () => {
                           <option value="">No vehicle assigned</option>
                           {vehicles.map((v) => (
                             <option key={v._id} value={v._id}>
-                              {v.title} ({v.type} - {v.seatingCapacity} seats)
+                              {v.title} ({v.type} -{" "}
+                              {v.seatCount || v.seatingCapacity} seats)
                             </option>
                           ))}
                         </select>

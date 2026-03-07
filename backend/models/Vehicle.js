@@ -9,7 +9,7 @@ const availabilitySchema = new mongoose.Schema(
       default: true,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 const vehicleSchema = new mongoose.Schema(
@@ -40,9 +40,23 @@ const vehicleSchema = new mongoose.Schema(
       type: String,
       enum: ["petrol", "diesel", "hybrid", "electric"],
     },
-    seatingCapacity: {
+    seatCount: {
       type: Number,
       required: true,
+      min: 1,
+      max: 30,
+    },
+    suitcaseCapacity: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 15,
+    },
+    bagCapacity: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 20,
     },
     pricePerDay: {
       type: Number,
@@ -76,7 +90,7 @@ const vehicleSchema = new mongoose.Schema(
       },
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 vehicleSchema.index({ owner: 1 });
