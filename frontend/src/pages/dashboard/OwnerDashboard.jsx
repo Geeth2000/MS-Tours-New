@@ -63,6 +63,25 @@ const OwnerDashboard = () => {
   // Vehicle features selection state
   const [selectedFeatures, setSelectedFeatures] = useState([]);
 
+  // Package includes selection state
+  const [selectedIncludes, setSelectedIncludes] = useState([]);
+
+  // Predefined package includes options
+  const PACKAGE_INCLUDES = [
+    "Air Conditioned Vehicle",
+    "Professional Tour Guide",
+    "Hotel Pickup & Drop-off",
+    "Breakfast Included",
+    "Lunch Included",
+    "Dinner Included",
+    "Entrance Fees Included",
+    "Fuel Included",
+    "Insurance Included",
+    "Refreshments",
+    "Bottled Water",
+    "First Aid Kit",
+  ];
+
   // Predefined vehicle features
   const VEHICLE_FEATURES = [
     "Air Conditioning",
@@ -87,6 +106,12 @@ const OwnerDashboard = () => {
       prev.includes(feature)
         ? prev.filter((f) => f !== feature)
         : [...prev, feature],
+    );
+  };
+
+  const toggleInclude = (item) => {
+    setSelectedIncludes((prev) =>
+      prev.includes(item) ? prev.filter((i) => i !== item) : [...prev, item],
     );
   };
 
@@ -223,15 +248,7 @@ const OwnerDashboard = () => {
         uploadedImageUrls = await Promise.all(uploadPromises);
       }
 
-      // Process array fields: includes, excludes, locations
-      let includesArray = [];
-      if (formData.includes && typeof formData.includes === "string") {
-        includesArray = formData.includes
-          .split(",")
-          .map((i) => i.trim())
-          .filter((i) => i.length > 0);
-      }
-
+      // Process array fields: excludes, locations (includes now uses selectedIncludes state)
       let excludesArray = [];
       if (formData.excludes && typeof formData.excludes === "string") {
         excludesArray = formData.excludes
@@ -250,7 +267,7 @@ const OwnerDashboard = () => {
 
       const payload = {
         ...formData,
-        includes: includesArray,
+        includes: selectedIncludes, // Use selected tags instead of parsed string
         excludes: excludesArray,
         locations: locationsArray,
         images: uploadedImageUrls,
@@ -270,6 +287,7 @@ const OwnerDashboard = () => {
       console.log("Package created successfully");
       packageForm.reset(PACKAGE_FORM_DEFAULTS);
       setSelectedPackageFiles([]);
+      setSelectedIncludes([]); // Reset includes selection
       setShowMobilePackageForm(false); // Hide mobile form after creation
       await load();
       toast.success("Package created successfully!");
@@ -450,6 +468,8 @@ const OwnerDashboard = () => {
     setShowMobilePackageForm(true);
     setExistingPackageImages(pkg.images || []);
     setSelectedPackageFiles([]);
+    // Set selected includes from package data
+    setSelectedIncludes(pkg.includes || []);
     // Pre-fill form with package data
     packageForm.reset({
       title: pkg.title,
@@ -458,7 +478,6 @@ const OwnerDashboard = () => {
       durationDays: pkg.durationDays,
       pricePerGroup: pkg.pricePerGroup || "",
       pricePerPerson: pkg.pricePerPerson || "",
-      includes: pkg.includes?.join(", ") || "",
       excludes: pkg.excludes?.join(", ") || "",
       locations: pkg.locations?.join(", ") || "",
       vehicle: pkg.vehicle || "",
@@ -498,15 +517,7 @@ const OwnerDashboard = () => {
       // Combine existing and new images
       const allImages = [...existingPackageImages, ...uploadedImageUrls];
 
-      // Process array fields
-      let includesArray = [];
-      if (formData.includes && typeof formData.includes === "string") {
-        includesArray = formData.includes
-          .split(",")
-          .map((i) => i.trim())
-          .filter((i) => i.length > 0);
-      }
-
+      // Process array fields (includes now uses selectedIncludes state)
       let excludesArray = [];
       if (formData.excludes && typeof formData.excludes === "string") {
         excludesArray = formData.excludes
@@ -525,7 +536,7 @@ const OwnerDashboard = () => {
 
       const payload = {
         ...formData,
-        includes: includesArray,
+        includes: selectedIncludes, // Use selected tags instead of parsed string
         excludes: excludesArray,
         locations: locationsArray,
         images: allImages,
@@ -542,6 +553,7 @@ const OwnerDashboard = () => {
       setEditingPackage(null);
       setExistingPackageImages([]);
       setSelectedPackageFiles([]);
+      setSelectedIncludes([]); // Reset includes selection
       setShowMobilePackageForm(false);
       await load();
       toast.success("Package updated successfully!");
@@ -560,6 +572,7 @@ const OwnerDashboard = () => {
     packageForm.reset(PACKAGE_FORM_DEFAULTS);
     setExistingPackageImages([]);
     setSelectedPackageFiles([]);
+    setSelectedIncludes([]); // Reset includes selection
     setShowMobilePackageForm(false);
   };
 
@@ -1397,18 +1410,47 @@ const OwnerDashboard = () => {
                       <p className="text-xs font-bold uppercase tracking-wider text-slate-600">
                         What's Included
                       </p>
-                      <TextAreaGroup
-                        label="Includes (comma-separated)"
-                        register={packageForm.register("includes")}
-                        placeholder="e.g., Hotel accommodation, Breakfast, Entrance fees, Guide"
-                      />
+
+                      {/* Package Includes - Selectable Tags */}
+                      <div>
+                        <label className="mb-2 block text-xs font-bold uppercase text-slate-400">
+                          Select Inclusions
+                        </label>
+                        <div className="flex flex-wrap gap-2">
+                          {PACKAGE_INCLUDES.map((item) => (
+                            <button
+                              key={item}
+                              type="button"
+                              onClick={() => toggleInclude(item)}
+                              className={`rounded-full px-3 py-1.5 text-xs font-medium border-2 transition-all ${
+                                selectedIncludes.includes(item)
+                                  ? "bg-emerald-500 text-white border-emerald-500"
+                                  : "bg-white text-slate-600 border-slate-300 hover:border-emerald-400 hover:text-emerald-600"
+                              }`}
+                            >
+                              {selectedIncludes.includes(item) && (
+                                <span className="mr-1">✓</span>
+                              )}
+                              {item}
+                            </button>
+                          ))}
+                        </div>
+                        {selectedIncludes.length > 0 && (
+                          <p className="mt-2 text-xs text-emerald-600">
+                            {selectedIncludes.length} inclusion
+                            {selectedIncludes.length !== 1 ? "s" : ""} selected
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Excludes - Keep as text for flexibility */}
                       <TextAreaGroup
                         label="Excludes (comma-separated)"
                         register={packageForm.register("excludes")}
-                        placeholder="e.g., Lunch, Dinner, Personal expenses"
+                        placeholder="e.g., Lunch, Dinner, Personal expenses, Tips"
                       />
                       <p className="text-xs text-slate-500">
-                        Separate each item with a comma
+                        List items NOT included in the package price
                       </p>
                     </div>
 

@@ -143,6 +143,11 @@ const Packages = () => {
                   <option value="">All Package Types</option>
                   <option value="dayTrip">☀️ Day Trip</option>
                   <option value="multiDay">🌙 Multi-Day Tour</option>
+                  <option value="adventure">🏔️ Adventure</option>
+                  <option value="cultural">🏛️ Cultural</option>
+                  <option value="wildlife">🦁 Wildlife Safari</option>
+                  <option value="relaxation">🧘 Relaxation</option>
+                  <option value="custom">✨ Custom</option>
                 </select>
               </div>
 

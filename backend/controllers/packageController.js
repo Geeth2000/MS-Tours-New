@@ -82,10 +82,20 @@ export const getPackages = asyncHandler(async (req, res) => {
 });
 
 export const getPackageById = asyncHandler(async (req, res) => {
-  const pkg = await Package.findById(req.params.id).populate({
-    path: "owner",
-    select: "firstName lastName email onboarding",
-  });
+  const pkg = await Package.findById(req.params.id)
+    .populate({
+      path: "owner",
+      select: "firstName lastName email onboarding",
+    })
+    .populate({
+      path: "vehicle",
+      select:
+        "title type seatCount seatingCapacity suitcaseCapacity bagCapacity features images owner make model year",
+      populate: {
+        path: "owner",
+        select: "firstName lastName",
+      },
+    });
   if (!pkg) {
     throw new ApiError(StatusCodes.NOT_FOUND, "Package not found");
   }
