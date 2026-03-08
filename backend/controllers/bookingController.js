@@ -7,16 +7,25 @@ import Package from "../models/Package.js";
 import { ApiError } from "../utils/apiError.js";
 import { apiResponse } from "../utils/apiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
-import { BOOKING_STATUS, DEFAULT_COMMISSION_PERCENT, USER_ROLES } from "../config/constants.js";
+import {
+  BOOKING_STATUS,
+  DEFAULT_COMMISSION_PERCENT,
+  USER_ROLES,
+} from "../config/constants.js";
 
 const resolveCommission = () => {
-  const commission = Number(process.env.COMMISSION_PERCENT || DEFAULT_COMMISSION_PERCENT);
+  const commission = Number(
+    process.env.COMMISSION_PERCENT || DEFAULT_COMMISSION_PERCENT,
+  );
   return Number.isNaN(commission) ? DEFAULT_COMMISSION_PERCENT : commission;
 };
 
 const calculatePrice = ({ bookingData, tour, vehicle, pkg }) => {
+  // Use travelerCount from new booking form, fallback to old travelers object for backwards compatibility
   const travelersCount =
-    (bookingData.travelers?.adults || 1) + (bookingData.travelers?.children || 0) * 0.5;
+    bookingData.travelerCount ||
+    (bookingData.travelers?.adults || 1) +
+      (bookingData.travelers?.children || 0) * 0.5;
 
   if (tour) {
     return Math.max(tour.pricePerPerson * travelersCount, tour.pricePerPerson);
@@ -24,9 +33,14 @@ const calculatePrice = ({ bookingData, tour, vehicle, pkg }) => {
 
   if (vehicle) {
     const start = new Date(bookingData.startDate);
-    const end = bookingData.endDate ? new Date(bookingData.endDate) : new Date(bookingData.startDate);
+    const end = bookingData.endDate
+      ? new Date(bookingData.endDate)
+      : new Date(bookingData.startDate);
     if (isAfter(start, end)) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, "End date must be after start date");
+      throw new ApiError(
+        StatusCodes.BAD_REQUEST,
+        "End date must be after start date",
+      );
     }
     const days = Math.max(differenceInCalendarDays(end, start) + 1, 1);
     return days * vehicle.pricePerDay;
@@ -37,8 +51,7 @@ const calculatePrice = ({ bookingData, tour, vehicle, pkg }) => {
       return pkg.pricePerGroup;
     }
     if (pkg.pricePerPerson) {
-      const peopleCount = (bookingData.travelers?.adults || 1) + (bookingData.travelers?.children || 0);
-      return Math.max(pkg.pricePerPerson * peopleCount, pkg.pricePerPerson);
+      return Math.max(pkg.pricePerPerson * travelersCount, pkg.pricePerPerson);
     }
   }
 
@@ -62,16 +75,24 @@ export const createBooking = asyncHandler(async (req, res) => {
     packageId ? Package.findById(packageId) : null,
   ]);
 
-  if (tourId && !tour) throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid tour selected");
+  if (tourId && !tour)
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid tour selected");
   if (vehicleId && !vehicle)
     throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid vehicle selected");
-  if (packageId && !pkg) throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid package selected");
+  if (packageId && !pkg)
+    throw new ApiError(StatusCodes.BAD_REQUEST, "Invalid package selected");
 
-  const totalPrice = calculatePrice({ bookingData: req.body, tour, vehicle, pkg });
+  const totalPrice = calculatePrice({
+    bookingData: req.body,
+    tour,
+    vehicle,
+    pkg,
+  });
 
   const commissionPercent =
     vehicle || pkg ? req.body.commissionPercent || resolveCommission() : 0;
 
+  // Build payload with customer-confirmed booking details
   const payload = {
     ...req.body,
     totalPrice,
@@ -79,6 +100,11 @@ export const createBooking = asyncHandler(async (req, res) => {
     user: req.user._id,
     vehicleOwner: vehicle?.owner,
     packageOwner: pkg?.owner,
+    // Set travelers object from travelerCount for backwards compatibility
+    travelers: {
+      adults: req.body.travelerCount || req.body.travelers?.adults || 1,
+      children: req.body.travelers?.children || 0,
+    },
   };
 
   if (!payload.endDate && payload.startDate) {
@@ -106,14 +132,22 @@ export const createBooking = asyncHandler(async (req, res) => {
 export const getMyBookings = asyncHandler(async (req, res) => {
   const bookings = await Booking.find({ user: req.user._id })
     .populate("tour")
-    .populate({ path: "vehicle", populate: { path: "owner", select: "firstName lastName" } })
-    .populate({ path: "package", populate: { path: "owner", select: "firstName lastName" } })
+    .populate({
+      path: "vehicle",
+      populate: { path: "owner", select: "firstName lastName" },
+    })
+    .populate({
+      path: "package",
+      populate: { path: "owner", select: "firstName lastName" },
+    })
     .sort({ createdAt: -1 });
   return res.status(StatusCodes.OK).json(apiResponse({ data: bookings }));
 });
 
 export const getOwnerBookings = asyncHandler(async (req, res) => {
-  const bookings = await Booking.find({ $or: [{ vehicleOwner: req.user._id }, { packageOwner: req.user._id }] })
+  const bookings = await Booking.find({
+    $or: [{ vehicleOwner: req.user._id }, { packageOwner: req.user._id }],
+  })
     .populate("user", "firstName lastName email")
     .populate("vehicle")
     .populate("package")
@@ -129,6 +163,10 @@ export const getAllBookings = asyncHandler(async (req, res) => {
     query.$or = [
       { referenceCode: { $regex: search, $options: "i" } },
       { notes: { $regex: search, $options: "i" } },
+      { customerName: { $regex: search, $options: "i" } },
+      { customerPhone: { $regex: search, $options: "i" } },
+      { customerEmail: { $regex: search, $options: "i" } },
+      { pickupLocation: { $regex: search, $options: "i" } },
     ];
   }
 
@@ -154,7 +192,7 @@ export const getAllBookings = asyncHandler(async (req, res) => {
         limit: Number(limit),
         totalPages: Math.ceil(total / Number(limit || 1)),
       },
-    })
+    }),
   );
 });
 
@@ -164,15 +202,23 @@ export const updateBookingStatus = asyncHandler(async (req, res) => {
     throw new ApiError(StatusCodes.NOT_FOUND, "Booking not found");
   }
 
-  if (req.user.role === USER_ROLES.TOURIST && booking.user.toString() !== req.user._id.toString()) {
+  if (
+    req.user.role === USER_ROLES.TOURIST &&
+    booking.user.toString() !== req.user._id.toString()
+  ) {
     throw new ApiError(StatusCodes.FORBIDDEN, "Cannot modify this booking");
   }
 
   if (req.user.role === USER_ROLES.VEHICLE_OWNER) {
-    const ownsVehicle = booking.vehicleOwner?.toString() === req.user._id.toString();
-    const ownsPackage = booking.packageOwner?.toString() === req.user._id.toString();
+    const ownsVehicle =
+      booking.vehicleOwner?.toString() === req.user._id.toString();
+    const ownsPackage =
+      booking.packageOwner?.toString() === req.user._id.toString();
     if (!ownsVehicle && !ownsPackage) {
-      throw new ApiError(StatusCodes.FORBIDDEN, "Cannot update unrelated bookings");
+      throw new ApiError(
+        StatusCodes.FORBIDDEN,
+        "Cannot update unrelated bookings",
+      );
     }
   }
 

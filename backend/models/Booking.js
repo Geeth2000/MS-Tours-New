@@ -33,6 +33,45 @@ const bookingSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    // Customer-confirmed booking details
+    customerName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    customerPhone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    customerEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+    },
+    pickupLocation: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    dropoffLocation: {
+      type: String,
+      trim: true,
+    },
+    pickupTime: {
+      type: String,
+      trim: true,
+    },
+    travelerCount: {
+      type: Number,
+      required: true,
+      min: 1,
+      default: 1,
+    },
+    specialRequests: {
+      type: String,
+      trim: true,
+    },
     startDate: {
       type: Date,
       required: true,
@@ -89,14 +128,16 @@ const bookingSchema = new mongoose.Schema(
       ref: "User",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 bookingSchema.pre("save", function computeEarnings(next) {
   if (this.isModified("totalPrice") || this.isModified("commissionPercent")) {
     const commissionRate = (this.commissionPercent || 0) / 100;
-    this.adminEarnings = Math.round(this.totalPrice * commissionRate * 100) / 100;
-    this.ownerEarnings = Math.round((this.totalPrice - this.adminEarnings) * 100) / 100;
+    this.adminEarnings =
+      Math.round(this.totalPrice * commissionRate * 100) / 100;
+    this.ownerEarnings =
+      Math.round((this.totalPrice - this.adminEarnings) * 100) / 100;
   }
   if (!this.referenceCode) {
     this.referenceCode = `MS-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
