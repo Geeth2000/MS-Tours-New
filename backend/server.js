@@ -3,10 +3,11 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import dotenv from "dotenv";
+
 import { connectDB } from "./config/db.js";
 import { notFoundHandler, errorHandler } from "./middleware/errorMiddleware.js";
-import { ApiError } from "./utils/apiError.js";
 
+// Routes
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import tourRoutes from "./routes/tourRoutes.js";
@@ -21,42 +22,68 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const allowedOrigins = process.env.CORS_ORIGIN?.split(",") || [
-  "https://mstours.live",
-  "https://www.mstours.live",
-  "http://localhost:5173",
-  "http://localhost:3000"
-];
+
+/* ================================
+   ✅ CORS CONFIG (FIXED)
+================================ */
+
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",")
+  : [
+      "https://mstours.live",
+      "https://www.mstours.live",
+      "http://localhost:5173",
+      "http://localhost:3000"
+    ];
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
+    console.log("Origin:", origin);
+
+    // Allow Postman / mobile apps (no origin)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
     }
+
+    // ❗ DO NOT THROW ERROR → just block silently
+    return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"]
 };
 
-// 1. Middleware
+/* ================================
+   ✅ MIDDLEWARE
+================================ */
+
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+app.options("*", cors(corsOptions)); // Preflight
 
 app.use(helmet());
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 
-// 2. Health Check
-app.get("/", (_, res) =>
-  res.status(200).json({ success: true, message: "M&S Tours API" }),
-);
+/* ================================
+   ✅ HEALTH CHECK
+================================ */
 
-// 3. Routes
+app.get("/", (_, res) => {
+  res.status(200).json({
+    success: true,
+    message: "M&S Tours API Running"
+  });
+});
+
+/* ================================
+   ✅ ROUTES
+================================ */
+
 const API_ROOT = "/api/v1";
+
 app.use(`${API_ROOT}/auth`, authRoutes);
 app.use(`${API_ROOT}/admin`, adminRoutes);
 app.use(`${API_ROOT}/tours`, tourRoutes);
@@ -67,29 +94,32 @@ app.use(`${API_ROOT}/reviews`, reviewRoutes);
 app.use(`${API_ROOT}/ai`, aiRoutes);
 app.use(`${API_ROOT}/custom-requests`, customRequestRoutes);
 
-// 4. Error Handling
+/* ================================
+   ❌ ERROR HANDLING
+================================ */
+
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-// 5. Server Initialization
+/* ================================
+   🚀 START SERVER
+================================ */
+
 const startServer = async () => {
   try {
-    // Attempt Database Connection
     if (!process.env.MONGO_URI) {
-      console.error("❌ Error: MONGO_URI is not defined in .env file");
+      console.error("❌ MONGO_URI missing");
       process.exit(1);
     }
 
     await connectDB(process.env.MONGO_URI);
-    console.log("✅ Database connected successfully");
+    console.log("✅ Database connected");
 
-    // Start listening on the port ONLY ONCE
     app.listen(PORT, () => {
-      console.log(`🚀 Server is live at: http://localhost:${PORT}`);
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
   } catch (error) {
-    console.error("❌ Critical Server Startup Error:", error.message);
-    // If we can't connect to DB or start, exit so PM2 can attempt a clean restart
+    console.error("❌ Server error:", error.message);
     process.exit(1);
   }
 };
