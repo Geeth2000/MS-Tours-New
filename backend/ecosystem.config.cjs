@@ -13,6 +13,7 @@ module.exports = {
       env_production: {
         NODE_ENV: "production",
         PORT: 5000,
+        DEBUG: "false"
       },
       error_file: "/var/log/pm2/mstours-error.log",
       out_file: "/var/log/pm2/mstours-out.log",
