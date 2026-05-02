@@ -46,7 +46,7 @@ export const login = asyncHandler(async (req, res) => {
     "+password",
   );
 
-  if (!user) {
+  if (!user || !user.password) {
     throw new ApiError(StatusCodes.UNAUTHORIZED, "Invalid credentials");
   }
 
