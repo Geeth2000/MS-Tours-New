@@ -5,6 +5,7 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import { connectDB } from "./config/db.js";
 import { notFoundHandler, errorHandler } from "./middleware/errorMiddleware.js";
+import { ApiError } from "./utils/apiError.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
@@ -33,7 +34,7 @@ app.use(
       ) {
         return callback(null, true);
       }
-      return callback(new Error("Not allowed by CORS"));
+      return callback(new ApiError(403, "Not allowed by CORS"));
     },
     credentials: true,
   }),
