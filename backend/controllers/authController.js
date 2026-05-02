@@ -47,11 +47,13 @@ export const login = asyncHandler(async (req, res) => {
   );
 
   if (!user || !user.password) {
+    console.log(`⚠️ Login failed: User not found or no password set for email: ${normalizedEmail}`);
     throw new ApiError(StatusCodes.UNAUTHORIZED, "Invalid credentials");
   }
 
   const isMatch = await user.comparePassword(password);
   if (!isMatch) {
+    console.log(`⚠️ Login failed: Password mismatch for email: ${normalizedEmail}`);
     throw new ApiError(StatusCodes.UNAUTHORIZED, "Invalid credentials");
   }
 
